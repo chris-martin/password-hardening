@@ -119,14 +119,6 @@ package interpolation {
 
     def apply(xs: Seq[Double]): Seq[Double] = xs map apply
 
-    override def hashCode(): Int = (coefficients, basis).hashCode()
-
-    override def equals(obj: Any): Boolean = obj match {
-      case that: Polynomial[_] =>
-        this.coefficients == that.coefficients && this.basis == that.basis
-      case _ => false
-    }
-
   }
 
   object Polynomial {
