@@ -24,11 +24,20 @@ package object interpolation {
   implicit val NewtonToMonomial = new BasisConversion[NewtonBasis, MonomialBasis] {
 
     def convert(f: Polynomial[NewtonBasis], b: MonomialBasis): Polynomial[MonomialBasis] =
-      (0 until f.coefficients.size).map({ i =>
-        f.coefficients(i) *
-          (0 until i).map(xi => Polynomial(Seq(-xi, 1), b)).
-            fold(Polynomial.constant(1)) { (a, b) => a * b }
-      }).fold(Polynomial.constant(0)) { (a, b) => a + b }
+      f.coefficients.zipWithIndex.map({ case (cf, i) =>
+        cf * (-1 until i).map({
+          case -1 => Polynomial(Seq(1), MonomialBasis())
+          case k => Polynomial(Seq(-f.basis.xs(k), 1), MonomialBasis())
+        }).fold(Monomial(1, 0)) { (a, b) => a * b }
+      }).fold(Monomial(0, 0)) { (a, b) => a + b }
+
+  }
+
+  implicit val MonomialToString = new BasisElementToString[MonomialBasis] {
+
+    def stringify(b: MonomialBasis, i: Int): String = i match {
+      case 0 => ""; case 1 => "x"; case _ => "x^%d" format i
+    }
 
   }
 
@@ -54,7 +63,9 @@ package object interpolation {
   implicit class MonomialOps(f: Polynomial[MonomialBasis]) {
 
     def *(g: Polynomial[MonomialBasis]): Polynomial[MonomialBasis] =
-      ???
+      (for ((a, i) <- f.coefficients.zipWithIndex; (b, j) <- g.coefficients.zipWithIndex) yield {
+        Monomial(a*b, i+j)
+      }).fold(Monomial(0, 0)) { (a, b) => a + b }
 
   }
 
@@ -111,7 +122,11 @@ package interpolation {
 
   }
 
-  case class Polynomial[Basis](coefficients: Seq[Double], basis: Basis)
+  trait BasisElementToString[B <: Basis] {
+    def stringify(b: B, i: Int): String
+  }
+
+  case class Polynomial[B <: Basis](coefficients: Seq[Double], basis: B)
       extends Function[Double, Double] {
 
     override def apply(x: Double): Double =
@@ -119,11 +134,17 @@ package interpolation {
 
     def apply(xs: Seq[Double]): Seq[Double] = xs map apply
 
+    def stringify(implicit bt: BasisElementToString[B]): String =
+      coefficients.zipWithIndex.map({
+        case (a, i) => "%1.2f%s".format(a, bt.stringify(basis, i))
+      }).mkString(" + ")
+
   }
 
-  object Polynomial {
+  object Monomial {
 
-    def constant(c: Double): Polynomial[MonomialBasis] = Polynomial(Seq(c), MonomialBasis())
+    def apply(coefficient: Double, xExponent: Int): Polynomial[MonomialBasis] =
+      Polynomial(Seq.fill(xExponent)(0d) :+ coefficient, MonomialBasis())
 
   }
 
