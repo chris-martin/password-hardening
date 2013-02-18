@@ -1,4 +1,4 @@
-package passwordhardening;
+package seclogin;
 
 import org.junit.Assert;
 import org.junit.Test;

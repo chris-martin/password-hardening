@@ -1,5 +1,7 @@
-package passwordhardening;
+package seclogin;
 
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 /**
@@ -16,6 +18,10 @@ final class Password {
 
     public char[] getPassword() {
         return password;
+    }
+
+    public byte[] asBytes() {
+        return Charset.forName("UTF-8").encode(CharBuffer.wrap(password)).array();
     }
 
     public void destroy() {

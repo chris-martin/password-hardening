@@ -1,6 +1,6 @@
 #!/bin/bash
 
-JAR=target/password-hardening.jar
+JAR=target/seclogin.jar
 
 if [ ! -e "$JAR" ]
 then
