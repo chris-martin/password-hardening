@@ -1,4 +1,4 @@
-package seclogin
+package seclogin.interpolation
 
 case class Point(x: Rational, y: Rational) {
 

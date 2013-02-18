@@ -1,4 +1,4 @@
-package seclogin
+package seclogin.interpolation
 
 import Rational.RationalIsFractional._
 

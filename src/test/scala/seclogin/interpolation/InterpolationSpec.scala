@@ -1,11 +1,11 @@
-package seclogin
+package seclogin.interpolation
 
 import org.scalatest._
 import collection.immutable.Seq
 import util.Random
 import RandomBigInt._
 
-class SecLoginSpec extends FreeSpec {
+class InterpolationSpec extends FreeSpec {
 
   "small interpolation" in {
     testInterpolation(
