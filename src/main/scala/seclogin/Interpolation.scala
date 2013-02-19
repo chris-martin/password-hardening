@@ -85,24 +85,39 @@ package interpolation {
     implicit def mod2BigInt(x: Mod): BigInt = x.q
   }
 
+  /** Adapts a `Random` for use with `Polynomial`s.
+    */
   case class RandomPolynomial(r: Random = new Random()) {
 
+    /** @return a random polynomial with `n` coefficients
+      * @param n the number of coefficients in the polynomial
+      */
     def nextPolynomial(n: Int)(implicit q: Mod): Polynomial = {
       Polynomial(Stream.fill(n) { r.nextBigIntModQ() })
     }
 
+    /** @return a random sampling of `nrOfPoints` distinct points from `polynomial`
+      * @param polynomial a polynomial that will be evaluated
+      * @param nrOfPoints the number of evaluations and the size of the returned collection
+      */
     def nextPoints(polynomial: Polynomial, nrOfPoints: Int)(implicit q: Mod): Seq[Point] =
       polynomial.points(Seq(r.nextUniqueBigIntsModQ(nrOfPoints).toSeq:_*))
 
   }
 
+  /** Adapts a `Random` for use with `BigInt`s in a finite field `Mod` q.
+    */
   case class RandomBigIntModQ(r: Random = new Random()) {
 
+    /** @return a uniformly random element of ''ℤ,,q,,''
+      */
     def nextBigIntModQ()(implicit q: Mod): BigInt = {
       val bits = q.bitLength
       Stream.continually(BigInt(numbits = bits, rnd = r)).filter(_ < q).head
     }
 
+    /** @return a uniformly random size-`n` subset of ''ℤ,,q,,''
+      */
     def nextUniqueBigIntsModQ(n: Int)(implicit q: Mod): Set[BigInt] = {
       val set = mutable.Set[BigInt]()
       while (set.size < n) set += nextBigIntModQ()
