@@ -1,8 +1,7 @@
-package seclogin
+package seclogin.interpolation
 
 import org.scalatest._
 import scala.util.Random
-import seclogin.interpolation._
 
 class InterpolationSpec extends FreeSpec {
 
