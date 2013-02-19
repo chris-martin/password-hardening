@@ -5,31 +5,33 @@ import scala.collection.mutable
 import scala.math.BigInt
 import scala.util.Random
 
-package object interpolation {
-
-  implicit def enrichRandomForPolynomial(x: Random): RandomPolynomial =
-    RandomPolynomial(x)
-
-  implicit def enrichRandomForBigIntsModQ(x: Random): RandomBigIntModQ =
-    RandomBigIntModQ(x)
-
-  implicit def enrichPointIterableForInterpolation(x: Iterable[Point])
-    (implicit q: Mod): Interpolation = Interpolation(Seq(x.toSeq:_*))
-
-}
-
 package interpolation {
 
+  /** Interpolation for the unique minimal-degree polynomial
+    * ''f : ℤ,,q,, → ℤ,,q,,'' containing all of the `points`.
+    * @param points ''(x, y)'' pairs that reside in ''f''
+    * @param q size of the field over which ''f'' is defined
+    */
   case class Interpolation(points: Seq[Point])(implicit q: Mod) extends Points {
 
-    def yIntercept: BigInt =
-      ((0 until n).map(i => (y(i) * λ(i)) mod q).sum) mod q
+    /** @return the value of the interpolated polynomial evaluated at `0`
+      */
+    def yIntercept: BigInt = {
+      val terms = for (i ← 0 until n) yield { (y(i) * λ(i)) mod q }
+      terms.sum mod q
+    }
 
-    private def λ(i: Int): BigInt =
-      (for (j <- 0 until n; if i != j) yield q.divide(x(j), x(j) - x(i))).product mod q
+    /** @return the `i`^th^ Lagrange coefficient
+      */
+    def λ(i: Int): BigInt = {
+      val terms = for (j ← 0 until n; if i != j) yield { q.divide(x(j), x(j) - x(i)) }
+      terms.product mod q
+    }
 
   }
 
+  /** An ''(x, y)'' pair contained by some function ''f(x) = y''.
+    */
   case class Point(x: BigInt, y: BigInt)
 
   trait Points {
@@ -39,25 +41,41 @@ package interpolation {
     def y(i: Int): BigInt = points(i).y
   }
 
+  /** A polynomial represented by its `coefficients` in the standard (monomial) basis.
+    * @param coefficients the coefficients for ''(1, x, x^2^, x^3^, ...)'' respectively
+    */
   case class Polynomial(coefficients: Seq[BigInt])(implicit q: Mod) {
 
-    def a = coefficients
-    def n = a.size
+    /** @return the number of coefficients (the degree of the polynomial plus 1,
+      * assuming nonzero coefficients)
+      */
+    def n = coefficients.size
 
+    /** @return ''f(x)'', the value of this function ''f'' at `x`.
+      */
     def apply(x: BigInt): BigInt =
-      (0 until n).map( i => (a(i) * q.pow(x, i)) mod q ).sum mod q
+      (0 until n).map( i ⇒ (coefficients(i) * q.pow(x, i)) mod q ).sum mod q
 
-    def apply(xs: Seq[BigInt]): Seq[BigInt] =
-      xs.map(apply(_))
-
+    /** @return for each ''x'' in `xs`, the point ''(x, f(x))''
+      */
     def points(xs: Seq[BigInt]): Seq[Point] =
-      for (x <- xs) yield Point(x, apply(x))
+      for (x ← xs) yield Point(x, apply(x))
 
   }
 
+  /** Represents ''ℤ,,q,,'', the field of integers ''[0, q)''.
+    * @param q the size of the field
+    */
   case class Mod(q: BigInt) {
+
+    /** @return ''`a`/`b` (mod `q`)''
+      */
     def divide(a: BigInt, b: BigInt): BigInt = a * (b modInverse q) mod q
-    def pow(a: BigInt, exp: BigInt): BigInt = a modPow (exp, q)
+
+    /** @return ''`base`^`exp`^ (mod `q`)''
+      */
+    def pow(base: BigInt, exp: BigInt): BigInt = base modPow (exp, q)
+
   }
 
   object Mod {
@@ -92,5 +110,18 @@ package interpolation {
     }
 
   }
+
+}
+
+package object interpolation {
+
+  implicit def enrichRandomForPolynomial(x: Random): RandomPolynomial =
+    RandomPolynomial(x)
+
+  implicit def enrichRandomForBigIntsModQ(x: Random): RandomBigIntModQ =
+    RandomBigIntModQ(x)
+
+  implicit def enrichPointIterableForInterpolation(x: Iterable[Point])
+    (implicit q: Mod): Interpolation = Interpolation(Seq(x.toSeq:_*))
 
 }
