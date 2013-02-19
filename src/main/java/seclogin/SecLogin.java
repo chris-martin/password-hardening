@@ -14,6 +14,8 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
+import static com.google.common.base.Preconditions.checkState;
+
 public class SecLogin {
 
     private final Console console;
@@ -21,6 +23,7 @@ public class SecLogin {
     private final QuestionBank questionBank;
 
     public SecLogin(Console console, Random random, QuestionBank questionBank) {
+        checkState(questionBank.getQuestions().size() == Parameters.M);
         this.console = console;
         this.random = random;
         this.questionBank = questionBank;
@@ -63,10 +66,20 @@ public class SecLogin {
 
             try {
                 FileOutputStream out = new FileOutputStream(instructionTableFile(user));
-                tableAndHpwd.table.serialize(out);
+                tableAndHpwd.table.write(out);
                 out.close();
             } catch (IOException e) {
                 System.err.println("Could not write instruction table.");
+                System.exit(1);
+            }
+
+            HistoryFile historyFile = HistoryFile.emptyHistoryFile(user);
+            try {
+                FileOutputStream out = new FileOutputStream(historyFile(user));
+                historyFile.write(out, tableAndHpwd.hpwd);
+                out.close();
+            } catch (IOException e) {
+                System.err.println("Could not write history file.");
                 System.exit(1);
             }
 
@@ -78,6 +91,10 @@ public class SecLogin {
 
     private File instructionTableFile(String user) {
         return new File("instruction-table-" + user);
+    }
+
+    private File historyFile(String user) {
+        return new File("history-file-" + user);
     }
 
     public static void main(String[] args) {Console console = System.console();

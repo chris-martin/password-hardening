@@ -1,33 +1,38 @@
 package seclogin;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.math.BigInteger;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Random;
 
-import com.google.common.collect.Lists;
+import com.google.common.io.BaseEncoding;
+import seclogin.io.ZqInputStream;
+import seclogin.io.ZqOutputStream;
+import seclogin.math.G;
+import seclogin.math.P;
+import seclogin.math.PolynomialOverZq;
+import seclogin.math.Zq;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class InstructionTable {
 
-    private static final int Q_BIT_LENGTH = 160;
     private static final BigInteger TWO = BigInteger.valueOf(2);
-
-    public enum FeatureDistinguishment { ALPHA, BETA }
+    public static final int R_LEN_IN_BYTES = Parameters.K / Byte.SIZE;
 
     private final Zq zq;
+    private final byte[] r;
     private final Entry[] table;
 
-    private InstructionTable(Zq zq, Entry[] table) {
+    private InstructionTable(Zq zq, byte[] r, Entry[] table) {
+        checkArgument(r.length == R_LEN_IN_BYTES);
         this.zq = zq;
+        this.r = r;
         this.table = table;
     }
 
@@ -44,29 +49,34 @@ public class InstructionTable {
         checkNotNull(features);
         checkArgument(features.length > 0);
 
-        Zq zq = new Zq(BigInteger.probablePrime(Q_BIT_LENGTH, random));
+        Zq zq = new Zq(BigInteger.probablePrime(Parameters.Q_LEN, random));
         PolynomialOverZq f = zq.randomPolynomial(features.length - 1, random);
 
         BigInteger hpwd = f.y(BigInteger.ZERO);
 
+        byte[] r = new byte[R_LEN_IN_BYTES];
+        random.nextBytes(r);
+
+        G g = G.forSaltedPassword(r, pwd, zq);
+        P p = new P(r, zq);
+
         Entry[] table = new Entry[features.length];
-        G gPwd = zq.g(pwd);
         for (int i = 0; i < table.length; i++) {
             BigInteger twoI = BigInteger.valueOf(i).multiply(TWO);
-            BigInteger alpha = f.y(p(twoI)).add(gPwd.g(twoI));
+            BigInteger alpha = f.y(p.of(twoI)).add(g.of(twoI)).mod(zq.q);
             if (features[i] == FeatureDistinguishment.BETA) {
                 alpha = zq.randomElementNotEqualTo(alpha, random);
             }
 
             BigInteger twoIPlusOne = twoI.add(BigInteger.ONE);
-            BigInteger beta = f.y(p(twoIPlusOne)).add(gPwd.g(twoIPlusOne));
+            BigInteger beta = f.y(p.of(twoIPlusOne)).add(g.of(twoIPlusOne)).mod(zq.q);
             if (features[i] == FeatureDistinguishment.ALPHA) {
                 beta = zq.randomElementNotEqualTo(beta, random);
             }
             table[i] = new Entry(alpha, beta);
         }
 
-        return new InstructionTableAndHardenedPassword(new InstructionTable(zq, table), hpwd);
+        return new InstructionTableAndHardenedPassword(new InstructionTable(zq, r, table), hpwd);
     }
 
     public static final class InstructionTableAndHardenedPassword {
@@ -79,10 +89,6 @@ public class InstructionTable {
         }
     }
 
-    private static BigInteger p(BigInteger x) {
-        return x.add(BigInteger.ONE);
-    }
-
     public static class Entry {
         public final BigInteger alpha;
         public final BigInteger beta;
@@ -91,47 +97,76 @@ public class InstructionTable {
             this.alpha = alpha;
             this.beta = beta;
         }
+
+        private void write(ZqOutputStream out) throws IOException {
+            out.writeBigInteger(alpha);
+            out.writeBigInteger(beta);
+        }
+
+        private static Entry read(ZqInputStream in) throws IOException {
+            BigInteger alpha = in.readBigInteger();
+            if (alpha == null) {
+                return null;
+            }
+            BigInteger beta = in.readBigInteger();
+            return new Entry(alpha, beta);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Entry that = (Entry) o;
+            if (!alpha.equals(that.alpha)) return false;
+            if (!beta.equals(that.beta)) return false;
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = alpha.hashCode();
+            result = 31 * result + beta.hashCode();
+            return result;
+        }
     }
 
-    public void serialize(OutputStream outputStream) {
-        PrintWriter out = new PrintWriter(new OutputStreamWriter(outputStream));
-        out.println(serialize(zq.q));
+    public void write(OutputStream outputStream) throws IOException {
+        ZqOutputStream out = new ZqOutputStream(new BufferedOutputStream(outputStream));
+        out.writeBigInteger(zq.q);
+        out.write(r);
         for (Entry entry : table) {
-            out.println(serialize(entry.alpha));
-            out.println(serialize(entry.beta));
+            entry.write(out);
         }
         out.flush();
     }
 
-    public static InstructionTable deserialize(InputStream inputStream) throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
-        BigInteger q = deserialize(in.readLine());
-        List<Entry> entries = Lists.newArrayList();
-        while (true) {
-            String alphaStr = in.readLine();
-            if (alphaStr == null) {
-                break;
+    public static InstructionTable read(InputStream inputStream) throws IOException {
+        ZqInputStream in = new ZqInputStream(new BufferedInputStream(inputStream));
+        try {
+            BigInteger q = in.readBigInteger();
+            byte[] r = new byte[R_LEN_IN_BYTES];
+            in.read(r);
+
+            Entry[] entries = new Entry[Parameters.M];
+            int i = 0;
+            while (true) {
+                Entry entry = Entry.read(in);
+                if (entry == null) {
+                    break;
+                }
+                entries[i++] = entry;
             }
-
-            String betaStr = in.readLine();
-            Entry entry = new Entry(deserialize(alphaStr), deserialize(betaStr));
-            entries.add(entry);
+            return new InstructionTable(new Zq(q), r, entries);
+        } finally {
+            in.close();
         }
-        return new InstructionTable(new Zq(q), entries.toArray(new Entry[entries.size()]));
     }
-
-    private static String serialize(BigInteger i) {
-        return i.toString(SERIALIZATION_RADIX);
-    }
-    private static BigInteger deserialize(String s) {
-        return new BigInteger(s, SERIALIZATION_RADIX);
-    }
-    private static final int SERIALIZATION_RADIX = 16;
 
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
         s.append(String.format("q=%s\n", zq.q.toString(16)));
+        s.append(String.format("r=%s\n", BaseEncoding.base16().lowerCase().encode(r)));
         for (int i = 0; i < table.length; i++) {
             Entry entry = table[i];
             s.append(String.format("a_%d=%s   b_%d=%s\n",
@@ -139,5 +174,24 @@ public class InstructionTable {
                     i, entry.beta.toString(16)));
         }
         return s.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InstructionTable that = (InstructionTable) o;
+        if (!zq.equals(that.zq)) return false;
+        if (!Arrays.equals(r, that.r)) return false;
+        if (!Arrays.equals(table, that.table)) return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = zq.hashCode();
+        result = 31 * result + Arrays.hashCode(r);
+        result = 31 * result + Arrays.hashCode(table);
+        return result;
     }
 }

@@ -1,4 +1,4 @@
-package seclogin;
+package seclogin.math;
 
 import java.math.BigInteger;
 import java.util.Random;
@@ -33,7 +33,17 @@ public class Zq {
         return new PolynomialOverZq(coeffs, this);
     }
 
-    public G g(Password pwd) {
-        return G.forPassword(pwd, this);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Zq that = (Zq) o;
+        if (!q.equals(that.q)) return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return q.hashCode();
     }
 }

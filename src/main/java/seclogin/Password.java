@@ -8,7 +8,7 @@ import java.util.Arrays;
  * A password. Consumers of this password should call {@link #destroy()} as
  * soon as the underlying characters are no longer needed.
  */
-final class Password {
+public final class Password {
 
     private final char[] password;
 

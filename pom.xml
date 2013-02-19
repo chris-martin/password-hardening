@@ -15,14 +15,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>13.0</version>
-    </dependency>
-
-    <!-- crypto -->
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-      <version>1.48</version>
+      <version>14.0-rc3</version>
     </dependency>
 
     <!-- command-line argument parsing -->
