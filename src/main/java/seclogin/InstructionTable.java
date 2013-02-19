@@ -13,10 +13,15 @@ import java.util.Random;
 
 import com.google.common.collect.Lists;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class InstructionTable {
 
     private static final int Q_BIT_LENGTH = 160;
     private static final BigInteger TWO = BigInteger.valueOf(2);
+
+    public enum FeatureDistinguishment { ALPHA, BETA }
 
     private final Zq zq;
     private final Entry[] table;
@@ -26,19 +31,38 @@ public class InstructionTable {
         this.table = table;
     }
 
-    public static InstructionTableAndHardenedPassword init(int numFeatures, Password pwd, Random random) {
+    public static InstructionTableAndHardenedPassword generate(int numFeatures, Password pwd, Random random) {
+        return generate(
+                new FeatureDistinguishment[numFeatures], // no distinguishing features yet
+                pwd,
+                random);
+    }
+
+    public static InstructionTableAndHardenedPassword generate(FeatureDistinguishment[] features,
+                                                               Password pwd,
+                                                               Random random) {
+        checkNotNull(features);
+        checkArgument(features.length > 0);
+
         Zq zq = new Zq(BigInteger.probablePrime(Q_BIT_LENGTH, random));
-        PolynomialOverZq f = zq.randomPolynomial(numFeatures - 1, random);
+        PolynomialOverZq f = zq.randomPolynomial(features.length - 1, random);
 
         BigInteger hpwd = f.y(BigInteger.ZERO);
 
-        Entry[] table = new Entry[numFeatures];
+        Entry[] table = new Entry[features.length];
+        G gPwd = zq.g(pwd);
         for (int i = 0; i < table.length; i++) {
             BigInteger twoI = BigInteger.valueOf(i).multiply(TWO);
-            BigInteger alpha = f.y(p(twoI)).add(zq.g(pwd, twoI));
+            BigInteger alpha = f.y(p(twoI)).add(gPwd.g(twoI));
+            if (features[i] == FeatureDistinguishment.BETA) {
+                alpha = zq.randomElementNotEqualTo(alpha, random);
+            }
 
             BigInteger twoIPlusOne = twoI.add(BigInteger.ONE);
-            BigInteger beta = f.y(p(twoIPlusOne)).add(zq.g(pwd, twoIPlusOne));
+            BigInteger beta = f.y(p(twoIPlusOne)).add(gPwd.g(twoIPlusOne));
+            if (features[i] == FeatureDistinguishment.ALPHA) {
+                beta = zq.randomElementNotEqualTo(beta, random);
+            }
             table[i] = new Entry(alpha, beta);
         }
 

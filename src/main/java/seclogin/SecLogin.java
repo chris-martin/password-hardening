@@ -58,10 +58,8 @@ public class SecLogin {
         Password password = new Password(rawPassword);
         try {
             InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                    InstructionTable.init(questionBank.getQuestions().size(), password, random);
+                    InstructionTable.generate(questionBank.getQuestions().size(), password, random);
             password.destroy();
-
-            System.out.println(tableAndHpwd.table);
 
             try {
                 FileOutputStream out = new FileOutputStream(instructionTableFile(user));
@@ -110,6 +108,7 @@ public class SecLogin {
         String usernameToAdd = ns.getString("add");
         if (usernameToAdd != null) {
             secLogin.addUser(usernameToAdd);
+            System.out.printf("Added user %s.\n", usernameToAdd);
             return;
         }
 

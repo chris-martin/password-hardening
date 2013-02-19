@@ -5,7 +5,7 @@ import java.math.BigInteger;
 public class PolynomialOverZq {
 
     private final BigInteger[] coeffs;
-    private final Zq zq;
+    public final Zq zq;
 
     PolynomialOverZq(BigInteger[] coeffs, Zq zq) {
         this.coeffs = coeffs;
