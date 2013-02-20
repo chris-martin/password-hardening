@@ -11,11 +11,11 @@ import static seclogin.Feature.BETA;
 public class Authenticator {
     
     private final Random random;
-    private final QuestionBank questionBank;
+    private final List<MeasurementParams> measurementParams;
 
-    public Authenticator(Random random, QuestionBank questionBank) {
+    public Authenticator(Random random, List<MeasurementParams> measurementParams) {
         this.random = random;
-        this.questionBank = questionBank;
+        this.measurementParams = measurementParams;
     }
 
     public UserState authenticate(UserState userState, Password password, double[] measurements) {
@@ -32,16 +32,15 @@ public class Authenticator {
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                InstructionTable.generate(historyFile.deriveFeatures(questionBank), password, random);
+                InstructionTable.generate(historyFile.deriveFeatures(measurementParams), password, random);
 
         return new UserState(userState.user, tableAndHpwd.table, historyFile.encrypt(tableAndHpwd.hpwd));
     }
     
     private Feature[] features(double[] measurements) {
-        List<Question> questions = questionBank.getQuestions();
-        Feature[] features = new Feature[questions.size()];
+        Feature[] features = new Feature[measurementParams.size()];
         for (int i = 0; i < features.length; i++) {
-            features[i] = measurements[i] < questions.get(i).measurementParams().t() ? ALPHA : BETA;
+            features[i] = measurements[i] < measurementParams.get(i).t() ? ALPHA : BETA;
         }
         return features;
     }
