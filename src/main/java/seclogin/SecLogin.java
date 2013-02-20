@@ -1,81 +1,54 @@
 package seclogin;
 
-import scala.tools.jline.console.ConsoleReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.Random;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import scala.tools.jline.console.ConsoleReader;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkState;
-import static seclogin.Feature.ALPHA;
-import static seclogin.Feature.BETA;
 
 public class SecLogin {
 
     private final ConsoleReader console;
     private final Random random;
     private final QuestionBank questionBank;
+    private final Authenticator authenticator;
 
     public SecLogin(ConsoleReader console, Random random, QuestionBank questionBank) {
         checkState(questionBank.getQuestions().size() == Parameters.M);
         this.console = console;
         this.random = random;
         this.questionBank = questionBank;
+        authenticator = new Authenticator(random, questionBank);
     }
 
     public void prompt() throws IOException {
         String user;
         while (Strings.isNullOrEmpty(user = console.readLine("login: ")));
 
-        InstructionTable instructionTable;
+        Password password = new Password(readPassword());
+        double[] measurements = askQuestions();
+
+        UserState userState = UserState.read(userStateDir(), user);
+
         try {
-            FileInputStream in = new FileInputStream(instructionTableFile(user));
-            instructionTable = InstructionTable.read(in);
-            in.close();
-        } catch (IOException e) {
-            System.err.println("Could not read instruction table.");
-            System.exit(1);
-            return;
-        }
-
-        HistoryFile.Encrypted encryptedHistoryFile;
-        try {
-            FileInputStream in = new FileInputStream(historyFile(user));
-            encryptedHistoryFile = HistoryFile.read(in);
-            in.close();
-        } catch (IOException e) {
-            System.err.println("Could not read instruction table.");
-            System.exit(1);
-            return;
-        }
-
-        Password password = new Password(console.readLine("password: ", ConsoleReader.NULL_MASK).toCharArray());
-        Feature[] features = askQuestions();
-
-        Authenticator authenticator = new Authenticator(
-                user,
-                password,
-                features,
-                instructionTable,
-                encryptedHistoryFile);
-
-        boolean success = false;
-        try {
-            success = authenticator.authenticate();
+            if (userState != null) {
+                userState = authenticator.authenticate(userState, password, measurements);
+            }
         } finally {
             password.destroy();
         }
 
-        if (success) {
+        if (userState != null) {
+            userState.write(userStateDir());
             System.out.println("Login correct.");
         } else {
             System.err.println("Login incorrect.");
@@ -83,70 +56,51 @@ public class SecLogin {
         System.out.println();
     }
 
-    Feature[] askQuestions() throws IOException {
-        Feature[] features = new Feature[Parameters.M];
-        int i = 0;
-        for (Question question : questionBank) {
-            features[i++] = askQuestion(question);
-        }
-        return features;
+    private char[] readPassword() throws IOException {
+        return console.readLine("password: ", ConsoleReader.NULL_MASK).toCharArray();
     }
 
-    private Feature askQuestion(Question question) throws IOException {
-        double numericAnswer;
+    double[] askQuestions() throws IOException {
+        double[] measurements = new double[Parameters.M];
+        int i = 0;
+        for (Question question : questionBank) {
+            measurements[i++] = askQuestion(question);
+        }
+        return measurements;
+    }
+
+    private double askQuestion(Question question) throws IOException {
         while (true) {
             String answer = console.readLine(question.getQuestion() + " ");
             try {
-                numericAnswer = Double.parseDouble(answer);
-                break;
+                return Double.parseDouble(answer);
             } catch (NumberFormatException e) {
                 System.err.println("Answer must be numeric.");
             }
         }
-        return numericAnswer < question.getAverageResponse() ? ALPHA : BETA;
     }
 
     public void addUser(String user) throws IOException {
         char[] rawPassword;
-        while ((rawPassword = console.readLine("password: ", ConsoleReader.NULL_MASK).toCharArray()) == null || rawPassword.length == 0);
+        while ((rawPassword = readPassword()) == null || rawPassword.length == 0);
 
         Password password = new Password(rawPassword);
         try {
-            InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                    InstructionTable.generate(questionBank.getQuestions().size(), password, random);
-            password.destroy();
-
-            try {
-                FileOutputStream out = new FileOutputStream(instructionTableFile(user));
-                tableAndHpwd.table.write(out);
-                out.close();
-            } catch (IOException e) {
-                System.err.println("Could not write instruction table.");
-                System.exit(1);
-            }
-
-            HistoryFile historyFile = HistoryFile.emptyHistoryFile(user);
-            try {
-                FileOutputStream out = new FileOutputStream(historyFile(user));
-                historyFile.write(out, tableAndHpwd.hpwd);
-                out.close();
-            } catch (IOException e) {
-                System.err.println("Could not write history file.");
-                System.exit(1);
-            }
-
-            // TODO write fixed-size history file
+            UserState userState = generateNewUserState(user, password);
+            userState.write(userStateDir());
         } finally {
             password.destroy();
         }
     }
 
-    private File instructionTableFile(String user) {
-        return new File("instruction-table-" + user);
+    private UserState generateNewUserState(String user, Password password) {
+        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd = InstructionTable.generate(password, random);
+        HistoryFile.Encrypted historyFile = HistoryFile.emptyHistoryFile(user).encrypt(tableAndHpwd.hpwd);
+        return new UserState(user, tableAndHpwd.table, historyFile);
     }
 
-    private File historyFile(String user) {
-        return new File("history-file-" + user);
+    private File userStateDir() {
+        return new File(".");
     }
 
     public static void main(String[] args) throws IOException {

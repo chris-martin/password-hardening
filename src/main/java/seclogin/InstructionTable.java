@@ -1,24 +1,18 @@
 package seclogin;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
 import seclogin.io.ZqInputStream;
 import seclogin.io.ZqOutputStream;
 import seclogin.math.*;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import java.io.*;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
+import static com.google.common.base.Preconditions.*;
 import static seclogin.Feature.ALPHA;
 import static seclogin.Feature.BETA;
 
@@ -66,9 +60,9 @@ public class InstructionTable {
         return xys;
     }
 
-    public static InstructionTableAndHardenedPassword generate(int numFeatures, Password pwd, Random random) {
+    public static InstructionTableAndHardenedPassword generate(Password pwd, Random random) {
         return generate(
-                new Feature[numFeatures], // no distinguishing features yet
+                new Feature[Parameters.M], // no distinguishing features yet
                 pwd,
                 random);
     }
@@ -77,7 +71,7 @@ public class InstructionTable {
                                                                Password pwd,
                                                                Random random) {
         checkNotNull(features);
-        checkArgument(features.length > 0);
+        checkArgument(features.length == Parameters.M);
 
         Zq zq = new Zq(BigInteger.probablePrime(Parameters.Q_LEN, random));
         Polynomial f = new RandomPolynomial(random).nextPolynomial(features.length, zq.q);

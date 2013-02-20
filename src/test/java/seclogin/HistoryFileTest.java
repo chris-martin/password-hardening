@@ -1,14 +1,14 @@
 package seclogin;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Random;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 
 public class HistoryFileTest {
     private Random random;
@@ -25,7 +25,7 @@ public class HistoryFileTest {
         HistoryFile written = randomHistoryFile();
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        written.write(out, hpwd);
+        written.encrypt(hpwd).write(out);
 
         HistoryFile read = HistoryFile.read(new ByteArrayInputStream(out.toByteArray())).decrypt(hpwd);
 
@@ -39,7 +39,7 @@ public class HistoryFileTest {
         HistoryFile written = randomHistoryFile();
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        written.write(out, hpwd);
+        written.encrypt(hpwd).write(out);
 
         BigInteger wrongHpwd = new BigInteger(Parameters.Q_LEN, random);
         HistoryFile readWithWrongHpwd = HistoryFile.read(new ByteArrayInputStream(out.toByteArray())).decrypt(wrongHpwd);

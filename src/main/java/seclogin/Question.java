@@ -3,18 +3,18 @@ package seclogin;
 public class Question {
 
     private final String question;
-    private final double averageResponse;
+    private final double responseMean;
 
-    public Question(String question, double averageResponse) {
+    public Question(String question, double responseMean) {
         this.question = question;
-        this.averageResponse = averageResponse;
+        this.responseMean = responseMean;
     }
 
     public String getQuestion() {
         return question;
     }
 
-    public double getAverageResponse() {
-        return averageResponse;
+    public double getResponseMean() {
+        return responseMean;
     }
 }

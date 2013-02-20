@@ -1,15 +1,14 @@
 package seclogin;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Random;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Random;
 
 public class InstructionTableTest {
 
@@ -22,10 +21,7 @@ public class InstructionTableTest {
 
     @Test
     public void testWriteAndRead() throws Exception {
-        InstructionTable written = InstructionTable.generate(
-                Parameters.M,
-                new Password("asdf".toCharArray()),
-                random).table;
+        InstructionTable written = InstructionTable.generate(new Password("asdf".toCharArray()), random).table;
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.write(out);
@@ -38,10 +34,7 @@ public class InstructionTableTest {
     @Test
     public void testInterpolateHpwd() throws Exception {
         Password pwd = new Password("asdf".toCharArray());
-        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd = InstructionTable.generate(
-                Parameters.M,
-                pwd,
-                random);
+        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd = InstructionTable.generate(pwd, random);
 
         Feature[] features = new Feature[Parameters.M];
 
