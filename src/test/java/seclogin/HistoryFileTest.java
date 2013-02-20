@@ -3,11 +3,11 @@ package seclogin;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import seclogin.math.PRG;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.Random;
 
 public class HistoryFileTest {
@@ -15,7 +15,31 @@ public class HistoryFileTest {
 
     @Before
     public void setUp() throws Exception {
-        random = new SecureRandom(new byte[1]);
+        random = PRG.random();
+    }
+
+    @Test
+    public void testEncryptAndDecrypt() throws Exception {
+        BigInteger hpwd = new BigInteger(Parameters.Q_LEN, random);
+
+        HistoryFile original = randomHistoryFile();
+        HistoryFile.Encrypted encrypted = original.encrypt(hpwd);
+        HistoryFile decrypted = encrypted.decrypt(hpwd);
+
+        Assert.assertEquals(original, decrypted);
+    }
+
+    @Test(expected = IndecipherableHistoryFileException.class)
+    public void testEncryptAndDecryptWithWrongHpwd() throws Exception {
+        BigInteger hpwd = new BigInteger(Parameters.Q_LEN, random);
+
+        HistoryFile original = randomHistoryFile();
+        HistoryFile.Encrypted encrypted = original.encrypt(hpwd);
+
+        BigInteger wrongHpwd = new BigInteger(Parameters.Q_LEN, random);
+        HistoryFile decrypted = encrypted.decrypt(wrongHpwd);
+
+        Assert.assertNotEquals(original, decrypted);
     }
 
     @Test
@@ -23,28 +47,11 @@ public class HistoryFileTest {
         BigInteger hpwd = new BigInteger(Parameters.Q_LEN, random);
 
         HistoryFile written = randomHistoryFile();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.encrypt(hpwd).write(out);
-
         HistoryFile read = HistoryFile.read(new ByteArrayInputStream(out.toByteArray())).decrypt(hpwd);
 
         Assert.assertEquals(written, read);
-    }
-
-    @Test(expected = IndecipherableHistoryFileException.class)
-    public void testWriteAndReadWithWrongHpwd() throws Exception {
-        BigInteger hpwd = new BigInteger(Parameters.Q_LEN, random);
-
-        HistoryFile written = randomHistoryFile();
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        written.encrypt(hpwd).write(out);
-
-        BigInteger wrongHpwd = new BigInteger(Parameters.Q_LEN, random);
-        HistoryFile readWithWrongHpwd = HistoryFile.read(new ByteArrayInputStream(out.toByteArray())).decrypt(wrongHpwd);
-
-        Assert.assertNotEquals(written, readWithWrongHpwd);
     }
 
     private HistoryFile randomHistoryFile() {
