@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static seclogin.Feature.ALPHA;
+import static seclogin.Feature.BETA;
 
 public class InstructionTable {
 
@@ -44,6 +45,9 @@ public class InstructionTable {
     private List<BigInteger> xys(Password pwd, Feature[] features) {
         checkArgument(features.length == table.length);
 
+        G g = G.forSaltedPassword(r, pwd, zq);
+        P p = new P(r, zq);
+
         List<BigInteger> xys = Lists.newArrayListWithCapacity(features.length * 2);
         for (int i = 0; i < features.length; i++) {
             Feature feature = features[i];
@@ -51,12 +55,9 @@ public class InstructionTable {
 
             Entry entry = table[i];
 
-            G g = G.forSaltedPassword(r, pwd, zq);
-            P p = new P(r, zq);
-
             BigInteger indexedInput = BigInteger.valueOf(feature == ALPHA ? (2*i) : ((2*i)+1));
             BigInteger x = p.of(indexedInput);
-            BigInteger y = (feature == ALPHA ? entry.alpha : entry.beta).subtract(g.of(indexedInput));
+            BigInteger y = (feature == ALPHA ? entry.alpha : entry.beta).subtract(g.of(indexedInput)).mod(zq.q);
 
             xys.add(x);
             xys.add(y);
@@ -92,13 +93,15 @@ public class InstructionTable {
         Entry[] table = new Entry[features.length];
         for (int i = 0; i < table.length; i++) {
             BigInteger twoI = BigInteger.valueOf(2*i);
-            BigInteger alpha = f.apply(p.of(twoI)).add(g.of(twoI)).mod(zq.q);
-            if (features[i] == Feature.BETA) {
+            BigInteger y0 = f.apply(p.of(twoI));
+            BigInteger alpha = y0.add(g.of(twoI)).mod(zq.q);
+            if (features[i] == BETA) {
                 alpha = zq.randomElementNotEqualTo(alpha, random);
             }
 
-            BigInteger twoIPlusOne = BigInteger.valueOf((2*i)+i);
-            BigInteger beta = f.apply(p.of(twoIPlusOne)).add(g.of(twoIPlusOne)).mod(zq.q);
+            BigInteger twoIPlusOne = twoI.add(BigInteger.ONE);
+            BigInteger y1 = f.apply(p.of(twoIPlusOne));
+            BigInteger beta = y1.add(g.of(twoIPlusOne)).mod(zq.q);
             if (features[i] == ALPHA) {
                 beta = zq.randomElementNotEqualTo(beta, random);
             }

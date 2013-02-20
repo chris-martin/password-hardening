@@ -2,7 +2,9 @@ package seclogin;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.Assert;
@@ -15,7 +17,7 @@ public class InstructionTableTest {
 
     @Before
     public void setUp() throws Exception {
-        random = new SecureRandom(new byte[1]);
+        random = new Random(0L);
     }
 
     @Test
@@ -31,5 +33,24 @@ public class InstructionTableTest {
         InstructionTable read = InstructionTable.read(new ByteArrayInputStream(out.toByteArray()));
 
         Assert.assertEquals(written, read);
+    }
+
+    @Test
+    public void testInterpolateHpwd() throws Exception {
+        Password pwd = new Password("asdf".toCharArray());
+        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd = InstructionTable.generate(
+                Parameters.M,
+                pwd,
+                random);
+
+        Feature[] features = new Feature[Parameters.M];
+
+        Arrays.fill(features, Feature.ALPHA);
+        BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, features);
+        Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
+
+        Arrays.fill(features, Feature.BETA);
+        hpwd = tableAndHpwd.table.interpolateHpwd(pwd, features);
+        Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
     }
 }

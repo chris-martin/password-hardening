@@ -14,9 +14,10 @@ public class P {
     private final Random random;
 
     private final BiMap<BigInteger, BigInteger> definition;
+    private BigInteger maxInput = BigInteger.valueOf(-1);
 
     public P(byte[] key, Zq zq) {
-        random = new SecureRandom(key);
+        random = new Random(new BigInteger(key).longValue()); // TODO horrible...find a real PRP or PRG
         this.zq = zq;
         definition = HashBiMap.create();
     }
@@ -24,9 +25,12 @@ public class P {
     public BigInteger of(BigInteger input) {
         BigInteger output = definition.get(input);
         if (output == null) {
-            while (definition.containsValue(output = zq.randomElement(random)));
+            for (BigInteger i = maxInput.add(BigInteger.ONE); i.compareTo(input) <= 0; i = i.add(BigInteger.ONE)) {
+                while (definition.containsValue(output = zq.randomElement(random)));
+                definition.put(i, output);
+            }
+            maxInput = input;
         }
-        definition.put(input, output);
         return output;
     }
 }

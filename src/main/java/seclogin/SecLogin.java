@@ -58,7 +58,7 @@ public class SecLogin {
             return;
         }
 
-        Password password = new Password(console.readLine("password: ", '*').toCharArray());
+        Password password = new Password(console.readLine("password: ", ConsoleReader.NULL_MASK).toCharArray());
         Feature[] features = askQuestions();
 
         Authenticator authenticator = new Authenticator(
@@ -108,7 +108,7 @@ public class SecLogin {
 
     public void addUser(String user) throws IOException {
         char[] rawPassword;
-        while ((rawPassword = console.readLine("password: ", '*').toCharArray()) == null || rawPassword.length == 0);
+        while ((rawPassword = console.readLine("password: ", ConsoleReader.NULL_MASK).toCharArray()) == null || rawPassword.length == 0);
 
         Password password = new Password(rawPassword);
         try {
