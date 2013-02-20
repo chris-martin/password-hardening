@@ -9,14 +9,11 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static seclogin.FeatureValue.ALPHA;
-import static seclogin.FeatureValue.BETA;
 
 /* A history file for a particular user. */
 public class HistoryFile {
@@ -33,6 +30,10 @@ public class HistoryFile {
         this.userHash = userHash;
         this.numMeasurements = numMeasurements;
         this.measurements = measurements;
+    }
+
+    public boolean isFull() {
+        return numMeasurements == measurements.length;
     }
 
     public static HistoryFile emptyHistoryFile(String user, HistoryFileParams params) {
@@ -137,26 +138,7 @@ public class HistoryFile {
         return new HistoryFile(historyFileParams, userHash, Math.min(historyFileParams.maxNrOfEntries(), numMeasurements + 1), shiftedMeasurements);
     }
 
-
-    public List<FeatureValue> deriveFeatures(List<MeasurementParams> params) {
-        checkArgument(params.size() == historyFileParams.nrOfFeatures());
-
-        List<MeasurementStats> stats = calculateStats();
-        List<FeatureValue> featureValues = new ArrayList<FeatureValue>();
-        for (int i = 0; i < historyFileParams.nrOfFeatures(); i++) {
-            MeasurementStats userStats = stats.get(i);
-            double mu = userStats.mu();
-            double sigma = userStats.sigma();
-            double t = params.get(i).t();
-            double k = params.get(i).k();
-            boolean isDistinguishing = numMeasurements < measurements.length
-                    || Math.abs(mu - t) > (k * sigma);
-            featureValues.add(isDistinguishing ? (mu < t ? ALPHA : BETA) : null);
-        }
-        return featureValues;
-    }
-
-    private List<MeasurementStats> calculateStats() {
+    public List<MeasurementStats> calculateStats() {
         List<MeasurementStats> stats = Lists.newArrayListWithCapacity(historyFileParams.nrOfFeatures());
         for (int i = 0; i < stats.size(); i++) {
             SummaryStatistics stat = new SummaryStatistics();

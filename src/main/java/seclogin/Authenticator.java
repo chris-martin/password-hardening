@@ -1,9 +1,12 @@
 package seclogin;
 
+import com.google.common.collect.Lists;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Random;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static seclogin.FeatureValue.ALPHA;
 import static seclogin.FeatureValue.BETA;
@@ -33,7 +36,7 @@ public class Authenticator {
 
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
-        List<FeatureValue> featureValues = historyFile.deriveFeatures(measurementParams);
+        List<FeatureValue> featureValues = deriveFeatures(historyFile);
         FeatureValue[] featuresArray = featureValues.toArray(new FeatureValue[featureValues.size()]);
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
             InstructionTable.generate(featuresArray, password, random);
@@ -56,5 +59,24 @@ public class Authenticator {
             throw new IndecipherableHistoryFileException();
         }
         return historyFile;
+    }
+
+    List<FeatureValue> deriveFeatures(HistoryFile historyFile) {
+        checkArgument(measurementParams.size() == historyFileParams.nrOfFeatures());
+
+        List<MeasurementStats> stats = historyFile.calculateStats();
+        checkState(stats.size() == historyFileParams.nrOfFeatures());
+
+        List<FeatureValue> featureValues = Lists.newArrayListWithCapacity(stats.size());
+        for (int i = 0; i < stats.size(); i++) {
+            MeasurementStats userStats = stats.get(i);
+            double mu = userStats.mu();
+            double sigma = userStats.sigma();
+            double t = measurementParams.get(i).t();
+            double k = measurementParams.get(i).k();
+            boolean isDistinguishing = historyFile.isFull() && Math.abs(mu - t) > (k * sigma);
+            featureValues.add(isDistinguishing ? (mu < t ? ALPHA : BETA) : null);
+        }
+        return featureValues;
     }
 }
