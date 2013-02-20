@@ -47,7 +47,7 @@ public class Authenticator {
     private FeatureValue[] features(double[] measurements) {
         FeatureValue[] featureValues = new FeatureValue[measurementParams.size()];
         for (int i = 0; i < featureValues.length; i++) {
-            featureValues[i] = measurements[i] < measurementParams.get(i).t() ? ALPHA : BETA;
+            featureValues[i] = measurements[i] < measurementParams.get(i).responseMean() ? ALPHA : BETA;
         }
         return featureValues;
     }
@@ -69,13 +69,11 @@ public class Authenticator {
 
         List<FeatureValue> featureValues = Lists.newArrayListWithCapacity(stats.size());
         for (int i = 0; i < stats.size(); i++) {
-            MeasurementStats userStats = stats.get(i);
-            double mu = userStats.mu();
-            double sigma = userStats.sigma();
-            double t = measurementParams.get(i).t();
-            double k = measurementParams.get(i).k();
-            boolean isDistinguishing = historyFile.isFull() && Math.abs(mu - t) > (k * sigma);
-            featureValues.add(isDistinguishing ? (mu < t ? ALPHA : BETA) : null);
+            MeasurementStats user = stats.get(i);
+            MeasurementParams system = measurementParams.get(i);
+            boolean isDistinguishing = historyFile.isFull() &&
+                    Math.abs(user.mean() - system.responseMean()) > (user.stDev() * system.stDevMultiplier());
+            featureValues.add(isDistinguishing ? (user.mean() < system.responseMean() ? ALPHA : BETA) : null);
         }
         return featureValues;
     }
