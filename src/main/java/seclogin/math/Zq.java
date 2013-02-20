@@ -25,14 +25,6 @@ public class Zq {
         return value;
     }
 
-    public PolynomialOverZq randomPolynomial(int order, Random random) {
-        BigInteger[] coeffs = new BigInteger[order + 1];
-        for (int i = 0; i < coeffs.length; i++) {
-            coeffs[i] = randomElement(random);
-        }
-        return new PolynomialOverZq(coeffs, this);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
