@@ -12,6 +12,8 @@ import java.util.Arrays;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
+import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -22,6 +24,7 @@ public class HistoryFile {
 
     private final byte[] userHash;
     private final double[][] measurements;
+    private StatisticalSummary[] stats;
 
     private HistoryFile(byte[] userHash, double[][] measurements) {
         this.userHash = userHash;
@@ -126,6 +129,24 @@ public class HistoryFile {
         shiftedMeasurements[0] = mostRecentMeasurements;
         System.arraycopy(measurements, 0, shiftedMeasurements, 1, shiftedMeasurements.length - 1);
         return new HistoryFile(userHash, shiftedMeasurements);
+    }
+
+    private StatisticalSummary getStats(int i) {
+        if (stats == null) {
+            stats = calculateStats();
+        }
+        return stats[i];
+    }
+
+    private SummaryStatistics[] calculateStats() {
+        SummaryStatistics[] stats = new SummaryStatistics[Parameters.M];
+        for (int i = 0; i < stats.length; i++) {
+            stats[i] = new SummaryStatistics();
+            for (double[] measurement : measurements) {
+                stats[i].addValue(measurement[i]);
+            }
+        }
+        return stats;
     }
 
     @Override
