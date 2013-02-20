@@ -22,22 +22,25 @@ public class HistoryFile {
 
     private static final HashFunction USER_HASH_FN = Hashing.sha256();
 
+    private final HistoryFileParams params;
     private final byte[] userHash;
     private final int numMeasurements;
     private final double[][] measurements;
 
-    private HistoryFile(byte[] userHash, int numMeasurements, double[][] measurements) {
+    private HistoryFile(HistoryFileParams params, byte[] userHash, int numMeasurements, double[][] measurements) {
+        this.params = params;
         this.userHash = userHash;
         this.numMeasurements = numMeasurements;
         this.measurements = measurements;
     }
 
-    public static HistoryFile emptyHistoryFile(String user) {
+    public static HistoryFile emptyHistoryFile(String user, HistoryFileParams params) {
         byte[] userHash = USER_HASH_FN.hashString(user).asBytes();
         return new HistoryFile(
+                params,
                 userHash,
                 0,
-                new double[Parameters.H][Parameters.M]);
+                new double[params.maxNrOfEntries()][Parameters.M]);
     }
 
     public Encrypted encrypt(BigInteger hpwd) {
@@ -55,7 +58,7 @@ public class HistoryFile {
         return new Encrypted(ciphertext);
     }
 
-    private static HistoryFile fromEncryptedByteArray(byte[] ciphertext, BigInteger hpwd)
+    private static HistoryFile fromEncryptedByteArray(byte[] ciphertext, BigInteger hpwd, HistoryFileParams params)
             throws IndecipherableHistoryFileException {
         byte[] plaintext;
         try {
@@ -63,7 +66,7 @@ public class HistoryFile {
         } catch (Exception e) {
             throw new IndecipherableHistoryFileException(e);
         }
-        return fromByteArray(plaintext);
+        return fromByteArray(plaintext, params);
     }
 
     private byte[] asEncryptedByteArray(BigInteger hpwd) {
@@ -82,7 +85,7 @@ public class HistoryFile {
         ByteBuffer.wrap(plaintext, offset, Integer.SIZE/Byte.SIZE).putInt(numMeasurements);
         offset += Integer.SIZE/Byte.SIZE;
 
-        checkState(measurements.length == Parameters.H);
+        checkState(measurements.length == params.maxNrOfEntries());
         for (int j = 0; j < measurements.length; j++) {
             for (int i = 0; i < measurements[j].length; i++) {
                 ByteBuffer.wrap(plaintext, offset + doubleByteOffset(j, i), DOUBLE_SIZE_IN_BYTES).putDouble(measurements[j][i]);
@@ -95,7 +98,7 @@ public class HistoryFile {
     private int sizeInBytes() {
         return (USER_HASH_FN.bits() / Byte.SIZE) +
                 (Integer.SIZE/Byte.SIZE) +
-                (Parameters.H * Parameters.M * DOUBLE_SIZE_IN_BYTES);
+                (params.maxNrOfEntries() * Parameters.M * DOUBLE_SIZE_IN_BYTES);
     }
 
     private static int doubleByteOffset(int j, int i) {
@@ -104,7 +107,7 @@ public class HistoryFile {
 
     private static final int DOUBLE_SIZE_IN_BYTES = Double.SIZE / Byte.SIZE;
 
-    static HistoryFile fromByteArray(byte[] plaintext) {
+    static HistoryFile fromByteArray(byte[] plaintext, HistoryFileParams params) {
         int offset = 0;
 
         byte[] userHash = new byte[USER_HASH_FN.bits() / Byte.SIZE];
@@ -114,14 +117,14 @@ public class HistoryFile {
         int numMeasurements = ByteBuffer.wrap(plaintext, offset, Integer.SIZE/Byte.SIZE).getInt();
         offset += Integer.SIZE/Byte.SIZE;
 
-        double[][] measurements = new double[Parameters.H][Parameters.M];
+        double[][] measurements = new double[params.maxNrOfEntries()][Parameters.M];
         for (int j = 0; j < measurements.length; j++) {
             for (int i = 0; i < measurements[j].length; i++) {
                 measurements[j][i] = ByteBuffer.wrap(plaintext, offset + doubleByteOffset(j, i), Double.SIZE/Byte.SIZE).getDouble();
             }
         }
 
-        return new HistoryFile(userHash, numMeasurements, measurements);
+        return new HistoryFile(params, userHash, numMeasurements, measurements);
     }
 
     public boolean userHashEquals(String user) {
@@ -133,7 +136,7 @@ public class HistoryFile {
         double[][] shiftedMeasurements = new double[measurements.length][];
         shiftedMeasurements[0] = mostRecentMeasurements;
         System.arraycopy(measurements, 0, shiftedMeasurements, 1, shiftedMeasurements.length - 1);
-        return new HistoryFile(userHash, Math.max(Parameters.H, numMeasurements + 1), shiftedMeasurements);
+        return new HistoryFile(params, userHash, Math.min(params.maxNrOfEntries(), numMeasurements + 1), shiftedMeasurements);
     }
 
     public Feature[] deriveFeatures(List<MeasurementParams> params) {
@@ -204,8 +207,8 @@ public class HistoryFile {
             this.ciphertext = ciphertext;
         }
 
-        public HistoryFile decrypt(BigInteger hpwd) throws IndecipherableHistoryFileException {
-            return HistoryFile.fromEncryptedByteArray(ciphertext, hpwd);
+        public HistoryFile decrypt(BigInteger hpwd, HistoryFileParams params) throws IndecipherableHistoryFileException {
+            return HistoryFile.fromEncryptedByteArray(ciphertext, hpwd, params);
         }
 
         public void write(OutputStream outputStream) throws IOException {

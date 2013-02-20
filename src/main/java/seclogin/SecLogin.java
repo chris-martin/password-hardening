@@ -21,13 +21,18 @@ public class SecLogin {
     private final Random random;
     private final QuestionBank questionBank;
     private final Authenticator authenticator;
+    private final HistoryFileParams historyFileParams = new HistoryFileParams(2);
 
     public SecLogin(ConsoleReader console, Random random, QuestionBank questionBank) {
         checkState(questionBank.getQuestions().size() == Parameters.M);
         this.console = console;
         this.random = random;
         this.questionBank = questionBank;
-        authenticator = new Authenticator(random, questionBank.measurementParams());
+        authenticator = new Authenticator(
+            random,
+            questionBank.measurementParams(),
+            historyFileParams
+        );
     }
 
     public void prompt() throws IOException {
@@ -86,8 +91,10 @@ public class SecLogin {
     }
 
     private UserState generateNewUserState(String user, Password password) {
-        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd = InstructionTable.generate(password, random);
-        HistoryFile.Encrypted historyFile = HistoryFile.emptyHistoryFile(user).encrypt(tableAndHpwd.hpwd);
+        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
+            InstructionTable.generate(password, random);
+        HistoryFile.Encrypted historyFile =
+            HistoryFile.emptyHistoryFile(user, historyFileParams).encrypt(tableAndHpwd.hpwd);
         return new UserState(user, tableAndHpwd.table, historyFile);
     }
 

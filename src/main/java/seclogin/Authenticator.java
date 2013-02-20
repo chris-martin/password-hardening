@@ -12,10 +12,12 @@ public class Authenticator {
     
     private final Random random;
     private final List<MeasurementParams> measurementParams;
+    private final HistoryFileParams historyFileParams;
 
-    public Authenticator(Random random, List<MeasurementParams> measurementParams) {
+    public Authenticator(Random random, List<MeasurementParams> measurementParams, HistoryFileParams historyFileParams) {
         this.random = random;
         this.measurementParams = measurementParams;
+        this.historyFileParams = historyFileParams;
     }
 
     public UserState authenticate(UserState userState, Password password, double[] measurements) {
@@ -47,7 +49,7 @@ public class Authenticator {
 
     private HistoryFile decryptHistoryFile(UserState userState, BigInteger hpwd)
             throws IndecipherableHistoryFileException {
-        HistoryFile historyFile = userState.historyFile.decrypt(hpwd);
+        HistoryFile historyFile = userState.historyFile.decrypt(hpwd, historyFileParams);
         if (!historyFile.userHashEquals(userState.user)) {
             throw new IndecipherableHistoryFileException();
         }
