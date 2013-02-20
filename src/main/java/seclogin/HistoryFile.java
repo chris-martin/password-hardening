@@ -149,9 +149,9 @@ public class HistoryFile {
             double sigma = userStats.getStandardDeviation();
             double t = params.get(i).t();
             double k = params.get(i).k();
-            if (numMeasurements < measurements.length || Math.abs(mu - t) > (k * sigma)) {
-                features.add(mu < t ? ALPHA : BETA);
-            }
+            boolean isDistinguishing = numMeasurements < measurements.length
+                    || Math.abs(mu - t) > (k * sigma);
+            features.add(isDistinguishing ? (mu < t ? ALPHA : BETA) : null);
         }
         return features;
     }
