@@ -24,7 +24,7 @@ import static seclogin.Feature.BETA;
 
 public class InstructionTable {
 
-    public static final int R_LEN_IN_BYTES = Parameters.K / Byte.SIZE;
+    public static final int R_LEN_IN_BYTES = Parameters.R_LEN / Byte.SIZE;
 
     private final Zq zq;
     private final byte[] r;

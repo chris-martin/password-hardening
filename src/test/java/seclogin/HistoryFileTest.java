@@ -50,21 +50,20 @@ public class HistoryFileTest {
     private HistoryFile randomHistoryFile() {
         HistoryFile written = HistoryFile.emptyHistoryFile("asdf");
         for (int i = 0; i < Parameters.H; ++i) {
-            written = written.withMostRecentFeatures(randomFeatures());
+            written = written.withMostRecentMeasurements(randomMeasurements());
         }
         return written;
     }
 
-    private Feature[] randomFeatures() {
-        Feature[] features = new Feature[Parameters.M];
-        for (int i = 0; i < features.length; i++) {
-            features[i] = randomFeature();
+    private double[] randomMeasurements() {
+        double[] measurements = new double[Parameters.M];
+        for (int i = 0; i < measurements.length; i++) {
+            measurements[i] = randomMeasurement();
         }
-        return features;
+        return measurements;
     }
 
-    private Feature randomFeature() {
-        int i = random.nextInt(Feature.values().length + 1);
-        return i == 0 ? null : Feature.values()[i - 1];
+    private double randomMeasurement() {
+        return random.nextInt(20);
     }
 }
