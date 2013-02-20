@@ -19,6 +19,13 @@ public class HistoryFileTest {
     }
 
     @Test
+    public void testAsByteArrayAndFromByteArray() throws Exception {
+        HistoryFile historyFile = randomHistoryFile();
+        byte[] bytes = historyFile.asByteArray();
+        Assert.assertEquals(historyFile, HistoryFile.fromByteArray(bytes));
+    }
+
+    @Test
     public void testEncryptAndDecrypt() throws Exception {
         BigInteger hpwd = new BigInteger(Parameters.Q_LEN, random);
 

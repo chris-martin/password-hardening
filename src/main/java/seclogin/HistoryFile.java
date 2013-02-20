@@ -70,7 +70,7 @@ public class HistoryFile {
         return Crypto.aes128Encrypt(hpwd, plaintext);
     }
 
-    private byte[] asByteArray() {
+    byte[] asByteArray() {
         byte[] plaintext = new byte[sizeInBytes()];
 
         int offset = 0;
@@ -103,7 +103,7 @@ public class HistoryFile {
 
     private static final int DOUBLE_SIZE_IN_BYTES = Double.SIZE / Byte.SIZE;
 
-    private static HistoryFile fromByteArray(byte[] plaintext) {
+    static HistoryFile fromByteArray(byte[] plaintext) {
         int offset = 0;
 
         byte[] userHash = new byte[USER_HASH_FN.bits() / Byte.SIZE];
