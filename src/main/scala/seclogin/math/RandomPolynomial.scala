@@ -2,10 +2,11 @@ package seclogin.math
 
 import scala.util.Random
 import scala.collection.immutable.Seq
+import java.security.SecureRandom
 
 /** Adapts a `Random` for use with `Polynomial`s.
   */
-case class RandomPolynomial(r: Random = new Random()) {
+case class RandomPolynomial(r: Random = new SecureRandom) {
 
   /** Java-friendly constructor.
     */

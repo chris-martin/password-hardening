@@ -4,10 +4,11 @@ import scala.collection.immutable.Set
 import scala.collection.mutable
 import scala.math.BigInt
 import scala.util.Random
+import java.security.SecureRandom
 
 /** Adapts a `Random` for use with `BigInt`s in a finite field `Mod` q.
   */
-case class RandomBigIntModQ(r: Random = new Random()) {
+case class RandomBigIntModQ(r: Random = new SecureRandom) {
 
   /** @return a uniformly random element of ''ℤ,,q,,''
     */
