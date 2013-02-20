@@ -41,7 +41,7 @@ public class Authenticator {
         List<Question> questions = questionBank.getQuestions();
         Feature[] features = new Feature[questions.size()];
         for (int i = 0; i < features.length; i++) {
-            features[i] = measurements[i] < questions.get(i).getResponseMean() ? ALPHA : BETA;
+            features[i] = measurements[i] < questions.get(i).measurementParams().t() ? ALPHA : BETA;
         }
         return features;
     }

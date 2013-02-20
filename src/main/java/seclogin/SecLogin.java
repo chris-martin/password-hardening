@@ -67,7 +67,7 @@ public class SecLogin {
 
     private double askQuestion(Question question) throws IOException {
         while (true) {
-            String answer = console.readLine(question.getQuestion() + " ");
+            String answer = console.readLine(question.question() + " ");
             try {
                 return Double.parseDouble(answer);
             } catch (NumberFormatException e) {
@@ -126,10 +126,19 @@ public class SecLogin {
     }
 
     private static final QuestionBank SAMPLE_QUESTION_BANK = new QuestionBank(
-            ImmutableList.of(
-                    new Question("How far (in miles) are you from the Georgia Tech campus?", 1),
-                    new Question("How long (in minutes) do you anticipate being logged in during this session?", 20),
-                    new Question("How many emails will you send during this session?", 2)
+        ImmutableList.of(
+            new Question(
+                "How far (in miles) are you from the Georgia Tech campus?",
+                new MeasurementParams(1, 2)
+            ),
+            new Question(
+                "How long (in minutes) do you anticipate being logged in during this session?",
+                new MeasurementParams(20, 2)
+            ),
+            new Question(
+                "How many emails will you send during this session?",
+                new MeasurementParams(2, 2)
             )
+        )
     );
 }

@@ -1,8 +1,6 @@
 package seclogin
 
-trait MeasurementParams {
-
-  def t : Double
-
-  def k : Double
-}
+/** @param t response mean
+  * @param k standard deviation multiplier
+  */
+case class MeasurementParams(t: Double, k: Double)

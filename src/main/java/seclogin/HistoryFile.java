@@ -144,8 +144,10 @@ public class HistoryFile {
             StatisticalSummary userStats = stats[i];
             double mu = userStats.getMean();
             double sigma = userStats.getStandardDeviation();
-            double t = questionBank.getQuestions().get(i).getResponseMean();
-            if (numMeasurements < Parameters.H || Math.abs(mu - t) > (Parameters.K * sigma)) {
+            Question question = questionBank.getQuestions().get(i);
+            double t = question.measurementParams().t();
+            double k = question.measurementParams().k();
+            if (numMeasurements < Parameters.H || Math.abs(mu - t) > (k * sigma)) {
                 features[i] = mu < t ? ALPHA : BETA;
             }
         }

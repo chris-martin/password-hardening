@@ -9,7 +9,5 @@ public class Parameters {
 
     public static final int H = 2; //TODO   // history file length
 
-    public static final int K = 2;          // standard deviation factor
-
     private Parameters() {}
 }
