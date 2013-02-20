@@ -12,13 +12,9 @@ import java.util.Random;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
-import seclogin.interpolation.InterpolationForJava;
 import seclogin.io.ZqInputStream;
 import seclogin.io.ZqOutputStream;
-import seclogin.math.G;
-import seclogin.math.P;
-import seclogin.math.PolynomialOverZq;
-import seclogin.math.Zq;
+import seclogin.math.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -42,7 +38,7 @@ public class InstructionTable {
 
     public BigInteger interpolateHpwd(Password pwd, Feature[] features) {
         List<BigInteger> xys = xys(pwd, features);
-        return new InterpolationForJava().yIntercept(xys, zq.q);
+        return new Interpolation(xys, zq.q).yIntercept().bigInteger();
     }
 
     private List<BigInteger> xys(Password pwd, Feature[] features) {

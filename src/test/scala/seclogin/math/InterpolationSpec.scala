@@ -1,6 +1,8 @@
-package seclogin.interpolation
+package seclogin.math
 
+import java.math.BigInteger
 import org.scalatest._
+import scala.collection.JavaConversions._
 import scala.util.Random
 
 class InterpolationSpec extends FreeSpec {
@@ -13,6 +15,18 @@ class InterpolationSpec extends FreeSpec {
   "large interpolation" in {
     implicit val q: Mod = BigInt("a85d364b1faa7c32a7e0c1676a26e50afb131443", 16)
     testInterpolation(250)
+  }
+
+
+  "tiny interpolation for java" in {
+    val i = new Interpolation(
+      Seq(
+        BigInteger.valueOf(2), BigInteger.valueOf(2),
+        BigInteger.valueOf(4), BigInteger.valueOf(3)
+      ),
+      BigInteger.valueOf(11)
+    )
+    assert(i.yIntercept.bigInteger == BigInteger.valueOf(1))
   }
 
   def testInterpolation(m: Int)(implicit q: Mod) {
