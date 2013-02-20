@@ -3,6 +3,7 @@ package seclogin;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import seclogin.math.PRG;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,7 +17,7 @@ public class InstructionTableTest {
 
     @Before
     public void setUp() throws Exception {
-        random = new Random(0L);
+        random = PRG.random();
     }
 
     @Test

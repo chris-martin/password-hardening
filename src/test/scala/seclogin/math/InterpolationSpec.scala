@@ -4,7 +4,6 @@ import java.math.BigInteger
 import org.scalatest._
 import scala.collection.JavaConversions._
 import scala.util.Random
-import java.security.SecureRandom
 
 class InterpolationSpec extends FreeSpec {
 
@@ -30,7 +29,7 @@ class InterpolationSpec extends FreeSpec {
   }
 
   def testInterpolation(m: Int)(implicit q: Mod) {
-    val random = new Random(new SecureRandom(Array()))
+    val random = new PRG()
     val polynomial = random.nextPolynomial(m)
     val points = random.nextPoints(polynomial, m)
     val i = points.yIntercept

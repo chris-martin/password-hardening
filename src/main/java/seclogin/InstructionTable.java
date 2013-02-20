@@ -40,7 +40,7 @@ public class InstructionTable {
         checkArgument(features.length == table.length);
 
         G g = G.forSaltedPassword(r, pwd, zq);
-        P p = new P(r, zq);
+        SparsePRP p = new SparsePRP(r, zq.q);
 
         List<BigInteger> xys = Lists.newArrayListWithCapacity(features.length * 2);
         for (int i = 0; i < features.length; i++) {
@@ -49,9 +49,11 @@ public class InstructionTable {
 
             Entry entry = table[i];
 
-            BigInteger indexedInput = BigInteger.valueOf(feature == ALPHA ? (2*i) : ((2*i)+1));
-            BigInteger x = p.of(indexedInput);
-            BigInteger y = (feature == ALPHA ? entry.alpha : entry.beta).subtract(g.of(indexedInput)).mod(zq.q);
+            int indexedInput = feature == ALPHA ? (2*i) : ((2*i)+1);
+            BigInteger x = p.apply(indexedInput).bigInteger();
+            BigInteger y = (feature == ALPHA ? entry.alpha : entry.beta)
+                    .subtract(g.of(BigInteger.valueOf(indexedInput)))
+                    .mod(zq.q);
 
             xys.add(x);
             xys.add(y);
@@ -82,20 +84,18 @@ public class InstructionTable {
         random.nextBytes(r);
 
         G g = G.forSaltedPassword(r, pwd, zq);
-        P p = new P(r, zq);
+        SparsePRP p = new SparsePRP(r, zq.q);
 
         Entry[] table = new Entry[features.length];
         for (int i = 0; i < table.length; i++) {
-            BigInteger twoI = BigInteger.valueOf(2*i);
-            BigInteger y0 = f.apply(p.of(twoI));
-            BigInteger alpha = y0.add(g.of(twoI)).mod(zq.q);
+            BigInteger y0 = f.apply(p.apply(2*i)).bigInteger();
+            BigInteger alpha = y0.add(g.of(BigInteger.valueOf(2*i))).mod(zq.q);
             if (features[i] == BETA) {
                 alpha = zq.randomElementNotEqualTo(alpha, random);
             }
 
-            BigInteger twoIPlusOne = twoI.add(BigInteger.ONE);
-            BigInteger y1 = f.apply(p.of(twoIPlusOne));
-            BigInteger beta = y1.add(g.of(twoIPlusOne)).mod(zq.q);
+            BigInteger y1 = f.apply(p.apply((2*i)+1)).bigInteger();
+            BigInteger beta = y1.add(g.of(BigInteger.valueOf((2*i)+1))).mod(zq.q);
             if (features[i] == ALPHA) {
                 beta = zq.randomElementNotEqualTo(beta, random);
             }
