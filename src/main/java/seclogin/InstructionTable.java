@@ -35,20 +35,20 @@ public class InstructionTable {
         this.table = table;
     }
 
-    public BigInteger interpolateHpwd(Password pwd, FeatureValue[] featureValues) {
+    public BigInteger interpolateHpwd(Password pwd, List<FeatureValue> featureValues) {
         List<BigInteger> xys = xys(pwd, featureValues);
         return new Interpolation(xys, zq.q).yIntercept().bigInteger();
     }
 
-    private List<BigInteger> xys(Password pwd, FeatureValue[] featureValues) {
-        checkArgument(featureValues.length == table.size());
+    private List<BigInteger> xys(Password pwd, List<FeatureValue> featureValues) {
+        checkArgument(featureValues.size() == table.size());
 
         G g = G.forSaltedPassword(r, pwd, zq);
         SparsePRP p = new SparsePRP(r, zq.q);
 
-        List<BigInteger> xys = Lists.newArrayListWithCapacity(featureValues.length * 2);
-        for (int i = 0; i < featureValues.length; i++) {
-            FeatureValue featureValue = featureValues[i];
+        List<BigInteger> xys = Lists.newArrayListWithCapacity(featureValues.size() * 2);
+        for (int i = 0; i < featureValues.size(); i++) {
+            FeatureValue featureValue = featureValues.get(i);
             checkNotNull(featureValue);
 
             Entry entry = table.get(i);
@@ -66,13 +66,13 @@ public class InstructionTable {
         return xys;
     }
 
-    public static InstructionTableAndHardenedPassword generate(FeatureValue[] featureValues,
+    public static InstructionTableAndHardenedPassword generate(List<FeatureValue> featureValues,
                                                                Password pwd,
                                                                Random random) {
         checkNotNull(featureValues);
 
         Zq zq = new Zq(BigInteger.probablePrime(Parameters.Q_LEN, random));
-        Polynomial f = new RandomPolynomial(random).nextPolynomial(featureValues.length, zq.q);
+        Polynomial f = new RandomPolynomial(random).nextPolynomial(featureValues.size(), zq.q);
 
         BigInteger hpwd = f.apply(BigInteger.ZERO);
 
@@ -82,17 +82,17 @@ public class InstructionTable {
         G g = G.forSaltedPassword(r, pwd, zq);
         SparsePRP p = new SparsePRP(r, zq.q);
 
-        List<Entry> table = Lists.newArrayListWithCapacity(featureValues.length);
-        for (int i = 0; i < featureValues.length; i++) {
+        List<Entry> table = Lists.newArrayListWithCapacity(featureValues.size());
+        for (int i = 0; i < featureValues.size(); i++) {
             BigInteger y0 = f.apply(p.apply(2*i)).bigInteger();
             BigInteger alpha = y0.add(g.of(BigInteger.valueOf(2*i))).mod(zq.q);
-            if (featureValues[i] == BETA) {
+            if (featureValues.get(i) == BETA) {
                 alpha = zq.randomElementNotEqualTo(alpha, random);
             }
 
             BigInteger y1 = f.apply(p.apply((2*i)+1)).bigInteger();
             BigInteger beta = y1.add(g.of(BigInteger.valueOf((2*i)+1))).mod(zq.q);
-            if (featureValues[i] == ALPHA) {
+            if (featureValues.get(i) == ALPHA) {
                 beta = zq.randomElementNotEqualTo(beta, random);
             }
             table.add(new Entry(alpha, beta));

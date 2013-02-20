@@ -3,6 +3,7 @@ package seclogin;
 import com.google.common.collect.Lists;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -37,17 +38,18 @@ public class Authenticator {
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
         List<FeatureValue> featureValues = deriveFeatures(historyFile);
-        FeatureValue[] featuresArray = featureValues.toArray(new FeatureValue[featureValues.size()]);
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(featuresArray, password, random);
+            InstructionTable.generate(featureValues, password, random);
 
         return new UserState(userState.user, tableAndHpwd.table, historyFile.encrypt(tableAndHpwd.hpwd));
     }
     
-    private FeatureValue[] features(double[] measurements) {
-        FeatureValue[] featureValues = new FeatureValue[measurementParams.size()];
-        for (int i = 0; i < featureValues.length; i++) {
-            featureValues[i] = measurements[i] < measurementParams.get(i).responseMean() ? ALPHA : BETA;
+    private List<FeatureValue> features(double[] measurements) {
+        checkArgument(measurements.length == measurementParams.size());
+
+        List<FeatureValue> featureValues = Lists.newArrayListWithCapacity(measurements.length);
+        for (int i = 0; i < measurements.length; i++) {
+            featureValues.add(measurements[i] < measurementParams.get(i).responseMean() ? ALPHA : BETA);
         }
         return featureValues;
     }
@@ -65,6 +67,10 @@ public class Authenticator {
         checkArgument(measurementParams.size() == historyFileParams.nrOfFeatures());
 
         List<MeasurementStats> stats = historyFile.calculateStats();
+        if (stats == null) {
+            return allNonDistinguishingFeatureValues();
+        }
+
         checkState(stats.size() == historyFileParams.nrOfFeatures());
 
         List<FeatureValue> featureValues = Lists.newArrayListWithCapacity(stats.size());
@@ -76,5 +82,9 @@ public class Authenticator {
             featureValues.add(isDistinguishing ? (user.mean() < system.responseMean() ? ALPHA : BETA) : null);
         }
         return featureValues;
+    }
+
+    private List<FeatureValue> allNonDistinguishingFeatureValues() {
+        return Collections.nCopies(historyFileParams.nrOfFeatures(), (FeatureValue) null);
     }
 }

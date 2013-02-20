@@ -8,7 +8,8 @@ import seclogin.math.PRG;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 public class InstructionTableTest {
@@ -25,7 +26,7 @@ public class InstructionTableTest {
     @Test
     public void testWriteAndRead() throws Exception {
         InstructionTable written =
-            InstructionTable.generate(new FeatureValue[nrOfFeatures], new Password("asdf"), random).table;
+            InstructionTable.generate(allFeatureValues(null), new Password("asdf"), random).table;
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.write(out);
@@ -35,20 +36,20 @@ public class InstructionTableTest {
         Assert.assertEquals(written, read);
     }
 
+    private List<FeatureValue> allFeatureValues(FeatureValue value) {
+        return Collections.nCopies(nrOfFeatures, value);
+    }
+
     @Test
     public void testInterpolateHpwd() throws Exception {
         Password pwd = new Password("asdf");
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(new FeatureValue[nrOfFeatures], pwd, random);
+            InstructionTable.generate(allFeatureValues(null), pwd, random);
 
-        FeatureValue[] featureValues = new FeatureValue[nrOfFeatures];
-
-        Arrays.fill(featureValues, FeatureValue.ALPHA);
-        BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, featureValues);
+        BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, allFeatureValues(FeatureValue.ALPHA));
         Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
 
-        Arrays.fill(featureValues, FeatureValue.BETA);
-        hpwd = tableAndHpwd.table.interpolateHpwd(pwd, featureValues);
+        hpwd = tableAndHpwd.table.interpolateHpwd(pwd, allFeatureValues(FeatureValue.BETA));
         Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
     }
 }

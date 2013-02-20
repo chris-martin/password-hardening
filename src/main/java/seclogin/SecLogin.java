@@ -11,6 +11,7 @@ import scala.tools.jline.console.ConsoleReader;
 import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.Random;
 
 public class SecLogin {
@@ -91,7 +92,10 @@ public class SecLogin {
 
     private UserState generateNewUserState(String user, Password password) {
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(new FeatureValue[historyFileParams.nrOfFeatures()], password, random);
+                InstructionTable.generate(
+                        Collections.nCopies(historyFileParams.nrOfFeatures(), (FeatureValue) null),
+                        password,
+                        random);
         HistoryFile.Encrypted historyFile =
             HistoryFile.emptyHistoryFile(user, historyFileParams).encrypt(tableAndHpwd.hpwd);
         return new UserState(user, tableAndHpwd.table, historyFile);
