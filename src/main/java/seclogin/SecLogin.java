@@ -27,7 +27,7 @@ public class SecLogin {
         this.console = console;
         this.random = random;
         this.questionBank = questionBank;
-        authenticator = new Authenticator(random, questionBank);
+        authenticator = new Authenticator(random, questionBank.measurementParams());
     }
 
     public void prompt() throws IOException {

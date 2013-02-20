@@ -10,6 +10,7 @@ import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -135,8 +136,8 @@ public class HistoryFile {
         return new HistoryFile(userHash, Math.max(Parameters.H, numMeasurements + 1), shiftedMeasurements);
     }
 
-    public Feature[] deriveFeatures(QuestionBank questionBank) {
-        checkArgument(questionBank.getQuestions().size() == Parameters.M);
+    public Feature[] deriveFeatures(List<MeasurementParams> params) {
+        checkArgument(params.size() == Parameters.M);
 
         SummaryStatistics[] stats = calculateStats();
         Feature[] features = new Feature[Parameters.M];
@@ -144,10 +145,9 @@ public class HistoryFile {
             StatisticalSummary userStats = stats[i];
             double mu = userStats.getMean();
             double sigma = userStats.getStandardDeviation();
-            Question question = questionBank.getQuestions().get(i);
-            double t = question.measurementParams().t();
-            double k = question.measurementParams().k();
-            if (numMeasurements < Parameters.H || Math.abs(mu - t) > (k * sigma)) {
+            double t = params.get(i).t();
+            double k = params.get(i).k();
+            if (numMeasurements < measurements.length || Math.abs(mu - t) > (k * sigma)) {
                 features[i] = mu < t ? ALPHA : BETA;
             }
         }
