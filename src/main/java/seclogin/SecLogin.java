@@ -39,12 +39,8 @@ public class SecLogin {
 
         UserState userState = UserState.read(userStateDir(), user);
 
-        try {
-            if (userState != null) {
-                userState = authenticator.authenticate(userState, password, measurements);
-            }
-        } finally {
-            password.destroy();
+        if (userState != null) {
+            userState = authenticator.authenticate(userState, password, measurements);
         }
 
         if (userState != null) {
@@ -56,8 +52,8 @@ public class SecLogin {
         System.out.println();
     }
 
-    private char[] readPassword() throws IOException {
-        return console.readLine("password: ", ConsoleReader.NULL_MASK).toCharArray();
+    private String readPassword() throws IOException {
+        return console.readLine("password: ", ConsoleReader.NULL_MASK);
     }
 
     double[] askQuestions() throws IOException {
@@ -81,16 +77,12 @@ public class SecLogin {
     }
 
     public void addUser(String user) throws IOException {
-        char[] rawPassword;
-        while ((rawPassword = readPassword()) == null || rawPassword.length == 0);
+        String rawPassword;
+        while ((rawPassword = readPassword()) == null || rawPassword.isEmpty());
 
         Password password = new Password(rawPassword);
-        try {
-            UserState userState = generateNewUserState(user, password);
-            userState.write(userStateDir());
-        } finally {
-            password.destroy();
-        }
+        UserState userState = generateNewUserState(user, password);
+        userState.write(userStateDir());
     }
 
     private UserState generateNewUserState(String user, Password password) {
