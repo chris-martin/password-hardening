@@ -22,13 +22,13 @@ public class InstructionTable {
 
     private final Zq zq;
     private final byte[] r;
-    private final Entry[] table;
+    private final List<Entry> table;
 
     private int nrOfFeatures() {
-        return table.length;
+        return table.size();
     }
 
-    private InstructionTable(Zq zq, byte[] r, Entry[] table) {
+    private InstructionTable(Zq zq, byte[] r, List<Entry> table) {
         checkArgument(r.length == R_LEN_IN_BYTES);
         this.zq = zq;
         this.r = r;
@@ -41,7 +41,7 @@ public class InstructionTable {
     }
 
     private List<BigInteger> xys(Password pwd, Feature[] features) {
-        checkArgument(features.length == table.length);
+        checkArgument(features.length == table.size());
 
         G g = G.forSaltedPassword(r, pwd, zq);
         SparsePRP p = new SparsePRP(r, zq.q);
@@ -51,7 +51,7 @@ public class InstructionTable {
             Feature feature = features[i];
             checkNotNull(feature);
 
-            Entry entry = table[i];
+            Entry entry = table.get(i);
 
             int indexedInput = feature == ALPHA ? (2*i) : ((2*i)+1);
             BigInteger x = p.apply(indexedInput).bigInteger();
@@ -82,8 +82,8 @@ public class InstructionTable {
         G g = G.forSaltedPassword(r, pwd, zq);
         SparsePRP p = new SparsePRP(r, zq.q);
 
-        Entry[] table = new Entry[features.length];
-        for (int i = 0; i < table.length; i++) {
+        List<Entry> table = Lists.newArrayListWithCapacity(features.length);
+        for (int i = 0; i < features.length; i++) {
             BigInteger y0 = f.apply(p.apply(2*i)).bigInteger();
             BigInteger alpha = y0.add(g.of(BigInteger.valueOf(2*i))).mod(zq.q);
             if (features[i] == BETA) {
@@ -95,7 +95,7 @@ public class InstructionTable {
             if (features[i] == ALPHA) {
                 beta = zq.randomElementNotEqualTo(beta, random);
             }
-            table[i] = new Entry(alpha, beta);
+            table.add(new Entry(alpha, beta));
         }
 
         return new InstructionTableAndHardenedPassword(new InstructionTable(zq, r, table), hpwd);
@@ -169,15 +169,15 @@ public class InstructionTable {
             byte[] r = new byte[R_LEN_IN_BYTES];
             in.read(r);
 
-            Entry[] entries = new Entry[nrOfFeatures];
-            int i = 0;
+            List<Entry> entries = Lists.newArrayListWithCapacity(nrOfFeatures);
             while (true) {
                 Entry entry = Entry.read(in);
                 if (entry == null) {
                     break;
                 }
-                entries[i++] = entry;
+                entries.add(entry);
             }
+            checkState(entries.size() == nrOfFeatures);
             return new InstructionTable(new Zq(q), r, entries);
         } finally {
             in.close();
@@ -189,8 +189,8 @@ public class InstructionTable {
         StringBuilder s = new StringBuilder();
         s.append(String.format("q=%s\n", zq.q.toString(16)));
         s.append(String.format("r=%s\n", BaseEncoding.base16().lowerCase().encode(r)));
-        for (int i = 0; i < table.length; i++) {
-            Entry entry = table[i];
+        for (int i = 0; i < table.size(); i++) {
+            Entry entry = table.get(i);
             s.append(String.format("a_%d=%s   b_%d=%s\n",
                     i, entry.alpha.toString(16),
                     i, entry.beta.toString(16)));
@@ -205,7 +205,7 @@ public class InstructionTable {
         InstructionTable that = (InstructionTable) o;
         if (!zq.equals(that.zq)) return false;
         if (!Arrays.equals(r, that.r)) return false;
-        if (!Arrays.equals(table, that.table)) return false;
+        if (!table.equals(that.table)) return false;
         return true;
     }
 
@@ -213,7 +213,7 @@ public class InstructionTable {
     public int hashCode() {
         int result = zq.hashCode();
         result = 31 * result + Arrays.hashCode(r);
-        result = 31 * result + Arrays.hashCode(table);
+        result = 31 * result + table.hashCode();
         return result;
     }
 }
