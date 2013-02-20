@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.*;
-import static seclogin.Feature.ALPHA;
-import static seclogin.Feature.BETA;
+import static seclogin.FeatureValue.ALPHA;
+import static seclogin.FeatureValue.BETA;
 
 public class InstructionTable {
 
@@ -35,27 +35,27 @@ public class InstructionTable {
         this.table = table;
     }
 
-    public BigInteger interpolateHpwd(Password pwd, Feature[] features) {
-        List<BigInteger> xys = xys(pwd, features);
+    public BigInteger interpolateHpwd(Password pwd, FeatureValue[] featureValues) {
+        List<BigInteger> xys = xys(pwd, featureValues);
         return new Interpolation(xys, zq.q).yIntercept().bigInteger();
     }
 
-    private List<BigInteger> xys(Password pwd, Feature[] features) {
-        checkArgument(features.length == table.size());
+    private List<BigInteger> xys(Password pwd, FeatureValue[] featureValues) {
+        checkArgument(featureValues.length == table.size());
 
         G g = G.forSaltedPassword(r, pwd, zq);
         SparsePRP p = new SparsePRP(r, zq.q);
 
-        List<BigInteger> xys = Lists.newArrayListWithCapacity(features.length * 2);
-        for (int i = 0; i < features.length; i++) {
-            Feature feature = features[i];
-            checkNotNull(feature);
+        List<BigInteger> xys = Lists.newArrayListWithCapacity(featureValues.length * 2);
+        for (int i = 0; i < featureValues.length; i++) {
+            FeatureValue featureValue = featureValues[i];
+            checkNotNull(featureValue);
 
             Entry entry = table.get(i);
 
-            int indexedInput = feature == ALPHA ? (2*i) : ((2*i)+1);
+            int indexedInput = featureValue == ALPHA ? (2*i) : ((2*i)+1);
             BigInteger x = p.apply(indexedInput).bigInteger();
-            BigInteger y = (feature == ALPHA ? entry.alpha : entry.beta)
+            BigInteger y = (featureValue == ALPHA ? entry.alpha : entry.beta)
                     .subtract(g.of(BigInteger.valueOf(indexedInput)))
                     .mod(zq.q);
 
@@ -66,13 +66,13 @@ public class InstructionTable {
         return xys;
     }
 
-    public static InstructionTableAndHardenedPassword generate(Feature[] features,
+    public static InstructionTableAndHardenedPassword generate(FeatureValue[] featureValues,
                                                                Password pwd,
                                                                Random random) {
-        checkNotNull(features);
+        checkNotNull(featureValues);
 
         Zq zq = new Zq(BigInteger.probablePrime(Parameters.Q_LEN, random));
-        Polynomial f = new RandomPolynomial(random).nextPolynomial(features.length, zq.q);
+        Polynomial f = new RandomPolynomial(random).nextPolynomial(featureValues.length, zq.q);
 
         BigInteger hpwd = f.apply(BigInteger.ZERO);
 
@@ -82,17 +82,17 @@ public class InstructionTable {
         G g = G.forSaltedPassword(r, pwd, zq);
         SparsePRP p = new SparsePRP(r, zq.q);
 
-        List<Entry> table = Lists.newArrayListWithCapacity(features.length);
-        for (int i = 0; i < features.length; i++) {
+        List<Entry> table = Lists.newArrayListWithCapacity(featureValues.length);
+        for (int i = 0; i < featureValues.length; i++) {
             BigInteger y0 = f.apply(p.apply(2*i)).bigInteger();
             BigInteger alpha = y0.add(g.of(BigInteger.valueOf(2*i))).mod(zq.q);
-            if (features[i] == BETA) {
+            if (featureValues[i] == BETA) {
                 alpha = zq.randomElementNotEqualTo(alpha, random);
             }
 
             BigInteger y1 = f.apply(p.apply((2*i)+1)).bigInteger();
             BigInteger beta = y1.add(g.of(BigInteger.valueOf((2*i)+1))).mod(zq.q);
-            if (features[i] == ALPHA) {
+            if (featureValues[i] == ALPHA) {
                 beta = zq.randomElementNotEqualTo(beta, random);
             }
             table.add(new Entry(alpha, beta));

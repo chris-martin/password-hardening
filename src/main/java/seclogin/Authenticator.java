@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkState;
-import static seclogin.Feature.ALPHA;
-import static seclogin.Feature.BETA;
+import static seclogin.FeatureValue.ALPHA;
+import static seclogin.FeatureValue.BETA;
 
 public class Authenticator {
     
@@ -33,20 +33,20 @@ public class Authenticator {
 
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
-        List<Feature> features = historyFile.deriveFeatures(measurementParams);
-        Feature[] featuresArray = features.toArray(new Feature[features.size()]);
+        List<FeatureValue> featureValues = historyFile.deriveFeatures(measurementParams);
+        FeatureValue[] featuresArray = featureValues.toArray(new FeatureValue[featureValues.size()]);
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
             InstructionTable.generate(featuresArray, password, random);
 
         return new UserState(userState.user, tableAndHpwd.table, historyFile.encrypt(tableAndHpwd.hpwd));
     }
     
-    private Feature[] features(double[] measurements) {
-        Feature[] features = new Feature[measurementParams.size()];
-        for (int i = 0; i < features.length; i++) {
-            features[i] = measurements[i] < measurementParams.get(i).t() ? ALPHA : BETA;
+    private FeatureValue[] features(double[] measurements) {
+        FeatureValue[] featureValues = new FeatureValue[measurementParams.size()];
+        for (int i = 0; i < featureValues.length; i++) {
+            featureValues[i] = measurements[i] < measurementParams.get(i).t() ? ALPHA : BETA;
         }
-        return features;
+        return featureValues;
     }
 
     private HistoryFile decryptHistoryFile(UserState userState, BigInteger hpwd)
