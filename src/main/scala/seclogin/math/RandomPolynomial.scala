@@ -7,12 +7,22 @@ import scala.collection.immutable.Seq
   */
 case class RandomPolynomial(r: Random = new Random()) {
 
+  /** Java-friendly constructor.
+    */
+  def this(javaRandom: java.util.Random) = this(javaRandom: Random)
+
   /** @return a random polynomial with `n` coefficients
     * @param n the number of coefficients in the polynomial
     */
-  def nextPolynomial(n: Int)(implicit q: Mod): Polynomial = {
+  def nextPolynomial(n: Int)(implicit q: Mod): Polynomial =
     Polynomial(Stream.fill(n) { r.nextBigIntModQ() })
-  }
+
+  /** Java-friendly version of `nextPolynomial(Int)(Mod)`.
+    * @param n the number of coefficients in the polynomial
+    * @param q the size of the field ''ℤ,,q,,''
+    */
+  def nextPolynomial(n: java.lang.Integer, q: java.math.BigInteger): Polynomial =
+    nextPolynomial(n)(Mod(q))
 
   /** @return a random sampling of `nrOfPoints` distinct points from `polynomial`
     * @param polynomial a polynomial that will be evaluated

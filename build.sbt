@@ -28,7 +28,8 @@ publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.
 
 libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "14.0-rc3",
-  "net.sourceforge.argparse4j" % "argparse4j" % "0.3.2"
+  "net.sourceforge.argparse4j" % "argparse4j" % "0.3.2",
+  "org.scala-lang" % "jline" % "2.10.0"
 )
 
 // Testing

@@ -1,6 +1,6 @@
 package seclogin;
 
-import java.io.Console;
+import scala.tools.jline.console.ConsoleReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,18 +21,18 @@ import static seclogin.Feature.BETA;
 
 public class SecLogin {
 
-    private final Console console;
+    private final ConsoleReader console;
     private final Random random;
     private final QuestionBank questionBank;
 
-    public SecLogin(Console console, Random random, QuestionBank questionBank) {
+    public SecLogin(ConsoleReader console, Random random, QuestionBank questionBank) {
         checkState(questionBank.getQuestions().size() == Parameters.M);
         this.console = console;
         this.random = random;
         this.questionBank = questionBank;
     }
 
-    public void prompt() {
+    public void prompt() throws IOException {
         String user;
         while (Strings.isNullOrEmpty(user = console.readLine("login: ")));
 
@@ -58,7 +58,7 @@ public class SecLogin {
             return;
         }
 
-        Password password = new Password(console.readPassword("password: "));
+        Password password = new Password(console.readLine("password: ", '*').toCharArray());
         Feature[] features = askQuestions();
 
         Authenticator authenticator = new Authenticator(
@@ -83,7 +83,7 @@ public class SecLogin {
         System.out.println();
     }
 
-    Feature[] askQuestions() {
+    Feature[] askQuestions() throws IOException {
         Feature[] features = new Feature[Parameters.M];
         int i = 0;
         for (Question question : questionBank) {
@@ -92,7 +92,7 @@ public class SecLogin {
         return features;
     }
 
-    private Feature askQuestion(Question question) {
+    private Feature askQuestion(Question question) throws IOException {
         double numericAnswer;
         while (true) {
             String answer = console.readLine(question.getQuestion() + " ");
@@ -106,9 +106,9 @@ public class SecLogin {
         return numericAnswer < question.getAverageResponse() ? ALPHA : BETA;
     }
 
-    public void addUser(String user) {
+    public void addUser(String user) throws IOException {
         char[] rawPassword;
-        while ((rawPassword = console.readPassword("password: ")) == null || rawPassword.length == 0);
+        while ((rawPassword = console.readLine("password: ", '*').toCharArray()) == null || rawPassword.length == 0);
 
         Password password = new Password(rawPassword);
         try {
@@ -149,12 +149,7 @@ public class SecLogin {
         return new File("history-file-" + user);
     }
 
-    public static void main(String[] args) {Console console = System.console();
-        if (console == null) {
-            System.err.println("Must be run from console.");
-            System.exit(1);
-            return;
-        }
+    public static void main(String[] args) throws IOException {
 
         ArgumentParser parser = ArgumentParsers.newArgumentParser(SecLogin.class.getSimpleName())
                 .defaultHelp(true)
@@ -172,7 +167,7 @@ public class SecLogin {
         }
 
         Random random = new SecureRandom();
-        SecLogin secLogin = new SecLogin(console, random, SAMPLE_QUESTION_BANK);
+        SecLogin secLogin = new SecLogin(new ConsoleReader(), random, SAMPLE_QUESTION_BANK);
 
         String usernameToAdd = ns.getString("add");
         if (usernameToAdd != null) {

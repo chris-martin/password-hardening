@@ -79,9 +79,9 @@ public class InstructionTable {
         checkArgument(features.length > 0);
 
         Zq zq = new Zq(BigInteger.probablePrime(Parameters.Q_LEN, random));
-        PolynomialOverZq f = zq.randomPolynomial(features.length - 1, random);
+        Polynomial f = new RandomPolynomial(random).nextPolynomial(features.length, zq.q);
 
-        BigInteger hpwd = f.y(BigInteger.ZERO);
+        BigInteger hpwd = f.apply(BigInteger.ZERO);
 
         byte[] r = new byte[R_LEN_IN_BYTES];
         random.nextBytes(r);
@@ -92,13 +92,13 @@ public class InstructionTable {
         Entry[] table = new Entry[features.length];
         for (int i = 0; i < table.length; i++) {
             BigInteger twoI = BigInteger.valueOf(2*i);
-            BigInteger alpha = f.y(p.of(twoI)).add(g.of(twoI)).mod(zq.q);
+            BigInteger alpha = f.apply(p.of(twoI)).add(g.of(twoI)).mod(zq.q);
             if (features[i] == Feature.BETA) {
                 alpha = zq.randomElementNotEqualTo(alpha, random);
             }
 
             BigInteger twoIPlusOne = BigInteger.valueOf((2*i)+i);
-            BigInteger beta = f.y(p.of(twoIPlusOne)).add(g.of(twoIPlusOne)).mod(zq.q);
+            BigInteger beta = f.apply(p.of(twoIPlusOne)).add(g.of(twoIPlusOne)).mod(zq.q);
             if (features[i] == ALPHA) {
                 beta = zq.randomElementNotEqualTo(beta, random);
             }
