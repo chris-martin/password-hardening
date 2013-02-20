@@ -4,6 +4,6 @@ case class HistoryFileParams(
   maxNrOfEntries: Int,
   nrOfFeatures: Int
 ) {
-  def H: Int = maxNrOfEntries
-  def M: Int = nrOfFeatures
+  def h: Int = maxNrOfEntries
+  def m: Int = nrOfFeatures
 }
