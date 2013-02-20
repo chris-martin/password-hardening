@@ -1,9 +1,9 @@
 package seclogin;
 
+import com.google.common.collect.Lists;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import java.io.*;
@@ -139,14 +139,14 @@ public class HistoryFile {
 
 
     public List<Feature> deriveFeatures(List<MeasurementParams> params) {
-        checkArgument(params.size() == this.historyFileParams.nrOfFeatures());
+        checkArgument(params.size() == historyFileParams.nrOfFeatures());
 
-        SummaryStatistics[] stats = calculateStats();
+        List<MeasurementStats> stats = calculateStats();
         List<Feature> features = new ArrayList<Feature>();
-        for (int i = 0; i < this.historyFileParams.nrOfFeatures(); i++) {
-            StatisticalSummary userStats = stats[i];
-            double mu = userStats.getMean();
-            double sigma = userStats.getStandardDeviation();
+        for (int i = 0; i < historyFileParams.nrOfFeatures(); i++) {
+            MeasurementStats userStats = stats.get(i);
+            double mu = userStats.mu();
+            double sigma = userStats.sigma();
             double t = params.get(i).t();
             double k = params.get(i).k();
             boolean isDistinguishing = numMeasurements < measurements.length
@@ -156,13 +156,14 @@ public class HistoryFile {
         return features;
     }
 
-    private SummaryStatistics[] calculateStats() {
-        SummaryStatistics[] stats = new SummaryStatistics[historyFileParams.nrOfFeatures()];
-        for (int i = 0; i < stats.length; i++) {
-            stats[i] = new SummaryStatistics();
+    private List<MeasurementStats> calculateStats() {
+        List<MeasurementStats> stats = Lists.newArrayListWithCapacity(historyFileParams.nrOfFeatures());
+        for (int i = 0; i < stats.size(); i++) {
+            SummaryStatistics stat = new SummaryStatistics();
             for (double[] measurement : measurements) {
-                stats[i].addValue(measurement[i]);
+                stat.addValue(measurement[i]);
             }
+            stats.add(new MeasurementStats(stat.getMean(), stat.getStandardDeviation()));
         }
         return stats;
     }
