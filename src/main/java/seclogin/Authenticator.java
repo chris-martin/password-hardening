@@ -42,7 +42,7 @@ public class Authenticator {
     private Feature[] features(double[] measurements) {
         Feature[] features = new Feature[measurementParams.size()];
         for (int i = 0; i < features.length; i++) {
-            features[i] = measurements[i] < measurementParams.get(i).responseMean() ? ALPHA : BETA;
+            features[i] = measurements[i] < measurementParams.get(i).t() ? ALPHA : BETA;
         }
         return features;
     }
