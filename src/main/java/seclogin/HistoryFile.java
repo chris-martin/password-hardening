@@ -147,8 +147,8 @@ public class HistoryFile {
             StatisticalSummary userStats = stats[i];
             double mu = userStats.getMean();
             double sigma = userStats.getStandardDeviation();
-            double t = params.get(i).T();
-            double k = params.get(i).K();
+            double t = params.get(i).t();
+            double k = params.get(i).k();
             if (numMeasurements < measurements.length || Math.abs(mu - t) > (k * sigma)) {
                 features.add(mu < t ? ALPHA : BETA);
             }
