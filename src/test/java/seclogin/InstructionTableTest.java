@@ -15,6 +15,8 @@ public class InstructionTableTest {
 
     private Random random;
 
+    private int nrOfFeatures = 3;
+
     @Before
     public void setUp() throws Exception {
         random = PRG.random();
@@ -22,12 +24,13 @@ public class InstructionTableTest {
 
     @Test
     public void testWriteAndRead() throws Exception {
-        InstructionTable written = InstructionTable.generate(new Password("asdf"), random).table;
+        InstructionTable written =
+            InstructionTable.generate(new Feature[nrOfFeatures], new Password("asdf"), random).table;
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.write(out);
 
-        InstructionTable read = InstructionTable.read(new ByteArrayInputStream(out.toByteArray()));
+        InstructionTable read = InstructionTable.read(new ByteArrayInputStream(out.toByteArray()), nrOfFeatures);
 
         Assert.assertEquals(written, read);
     }
@@ -35,9 +38,10 @@ public class InstructionTableTest {
     @Test
     public void testInterpolateHpwd() throws Exception {
         Password pwd = new Password("asdf");
-        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd = InstructionTable.generate(pwd, random);
+        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
+            InstructionTable.generate(new Feature[nrOfFeatures], pwd, random);
 
-        Feature[] features = new Feature[Parameters.M];
+        Feature[] features = new Feature[nrOfFeatures];
 
         Arrays.fill(features, Feature.ALPHA);
         BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, features);

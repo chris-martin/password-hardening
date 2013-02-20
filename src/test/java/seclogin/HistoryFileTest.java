@@ -14,7 +14,9 @@ public class HistoryFileTest {
 
     private Random random;
 
-    private final HistoryFileParams params = new HistoryFileParams(2);
+    int maxNrOfEntries = 2;
+    int nrOfFeatures = 3;
+    private final HistoryFileParams params = new HistoryFileParams(maxNrOfEntries, nrOfFeatures);
 
     @Before
     public void setUp() throws Exception {
@@ -73,7 +75,7 @@ public class HistoryFileTest {
     }
 
     private double[] randomMeasurements() {
-        double[] measurements = new double[Parameters.M];
+        double[] measurements = new double[params.nrOfFeatures()];
         for (int i = 0; i < measurements.length; i++) {
             measurements[i] = randomMeasurement();
         }

@@ -41,11 +41,11 @@ public class UserState {
         }
     }
 
-    public static UserState read(File dir, String user) {
+    public static UserState read(File dir, String user, int nrOfFeatures) {
         InstructionTable instructionTable;
         try {
             FileInputStream in = new FileInputStream(instructionTableFile(dir, user));
-            instructionTable = InstructionTable.read(in);
+            instructionTable = InstructionTable.read(in, nrOfFeatures);
             in.close();
         } catch (FileNotFoundException e) {
             return null;

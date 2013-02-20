@@ -24,6 +24,10 @@ public class InstructionTable {
     private final byte[] r;
     private final Entry[] table;
 
+    private int nrOfFeatures() {
+        return table.length;
+    }
+
     private InstructionTable(Zq zq, byte[] r, Entry[] table) {
         checkArgument(r.length == R_LEN_IN_BYTES);
         this.zq = zq;
@@ -58,22 +62,14 @@ public class InstructionTable {
             xys.add(x);
             xys.add(y);
         }
-        checkState(xys.size() == Parameters.M * 2);
+        checkState(xys.size() == nrOfFeatures() * 2);
         return xys;
-    }
-
-    public static InstructionTableAndHardenedPassword generate(Password pwd, Random random) {
-        return generate(
-                new Feature[Parameters.M], // no distinguishing features yet
-                pwd,
-                random);
     }
 
     public static InstructionTableAndHardenedPassword generate(Feature[] features,
                                                                Password pwd,
                                                                Random random) {
         checkNotNull(features);
-        checkArgument(features.length == Parameters.M);
 
         Zq zq = new Zq(BigInteger.probablePrime(Parameters.Q_LEN, random));
         Polynomial f = new RandomPolynomial(random).nextPolynomial(features.length, zq.q);
@@ -166,14 +162,14 @@ public class InstructionTable {
         out.flush();
     }
 
-    public static InstructionTable read(InputStream inputStream) throws IOException {
+    public static InstructionTable read(InputStream inputStream, int nrOfFeatures) throws IOException {
         ZqInputStream in = new ZqInputStream(new BufferedInputStream(inputStream));
         try {
             BigInteger q = in.readBigInteger();
             byte[] r = new byte[R_LEN_IN_BYTES];
             in.read(r);
 
-            Entry[] entries = new Entry[Parameters.M];
+            Entry[] entries = new Entry[nrOfFeatures];
             int i = 0;
             while (true) {
                 Entry entry = Entry.read(in);

@@ -13,18 +13,17 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Random;
 
-import static com.google.common.base.Preconditions.checkState;
-
 public class SecLogin {
 
     private final ConsoleReader console;
     private final Random random;
     private final QuestionBank questionBank;
     private final Authenticator authenticator;
-    private final HistoryFileParams historyFileParams = new HistoryFileParams(2);
+    private final HistoryFileParams historyFileParams;
 
     public SecLogin(ConsoleReader console, Random random, QuestionBank questionBank) {
-        checkState(questionBank.getQuestions().size() == Parameters.M);
+        int nrOfFeatures = questionBank.getQuestions().size();
+        historyFileParams = new HistoryFileParams(2, nrOfFeatures);
         this.console = console;
         this.random = random;
         this.questionBank = questionBank;
@@ -42,7 +41,7 @@ public class SecLogin {
         Password password = new Password(readPassword());
         double[] measurements = askQuestions();
 
-        UserState userState = UserState.read(userStateDir(), user);
+        UserState userState = UserState.read(userStateDir(), user, historyFileParams.nrOfFeatures());
 
         if (userState != null) {
             userState = authenticator.authenticate(userState, password, measurements);
@@ -62,7 +61,7 @@ public class SecLogin {
     }
 
     double[] askQuestions() throws IOException {
-        double[] measurements = new double[Parameters.M];
+        double[] measurements = new double[historyFileParams.nrOfFeatures()];
         int i = 0;
         for (Question question : questionBank) {
             measurements[i++] = askQuestion(question);
@@ -92,7 +91,7 @@ public class SecLogin {
 
     private UserState generateNewUserState(String user, Password password) {
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(password, random);
+            InstructionTable.generate(new Feature[historyFileParams.nrOfFeatures()], password, random);
         HistoryFile.Encrypted historyFile =
             HistoryFile.emptyHistoryFile(user, historyFileParams).encrypt(tableAndHpwd.hpwd);
         return new UserState(user, tableAndHpwd.table, historyFile);
