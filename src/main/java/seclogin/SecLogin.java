@@ -2,6 +2,7 @@ package seclogin;
 
 import java.io.Console;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -15,6 +16,8 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import static com.google.common.base.Preconditions.checkState;
+import static seclogin.Feature.ALPHA;
+import static seclogin.Feature.BETA;
 
 public class SecLogin {
 
@@ -33,11 +36,41 @@ public class SecLogin {
         String user;
         while (Strings.isNullOrEmpty(user = console.readLine("login: ")));
 
+        InstructionTable instructionTable;
+        try {
+            FileInputStream in = new FileInputStream(instructionTableFile(user));
+            instructionTable = InstructionTable.read(in);
+            in.close();
+        } catch (IOException e) {
+            System.err.println("Could not read instruction table.");
+            System.exit(1);
+            return;
+        }
+
+        HistoryFile.Encrypted encryptedHistoryFile;
+        try {
+            FileInputStream in = new FileInputStream(historyFile(user));
+            encryptedHistoryFile = HistoryFile.read(in);
+            in.close();
+        } catch (IOException e) {
+            System.err.println("Could not read instruction table.");
+            System.exit(1);
+            return;
+        }
+
         Password password = new Password(console.readPassword("password: "));
+        Feature[] features = askQuestions();
+
+        Authenticator authenticator = new Authenticator(
+                user,
+                password,
+                features,
+                instructionTable,
+                encryptedHistoryFile);
 
         boolean success = false;
         try {
-            success = authenticate(user, password);
+            success = authenticator.authenticate();
         } finally {
             password.destroy();
         }
@@ -50,8 +83,27 @@ public class SecLogin {
         System.out.println();
     }
 
-    private boolean authenticate(String user, Password password) {
-        return false;
+    Feature[] askQuestions() {
+        Feature[] features = new Feature[Parameters.M];
+        int i = 0;
+        for (Question question : questionBank) {
+            features[i++] = askQuestion(question);
+        }
+        return features;
+    }
+
+    private Feature askQuestion(Question question) {
+        double numericAnswer;
+        while (true) {
+            String answer = console.readLine(question.getQuestion() + " ");
+            try {
+                numericAnswer = Double.parseDouble(answer);
+                break;
+            } catch (NumberFormatException e) {
+                System.err.println("Answer must be numeric.");
+            }
+        }
+        return numericAnswer < question.getAverageResponse() ? ALPHA : BETA;
     }
 
     public void addUser(String user) {

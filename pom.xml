@@ -11,6 +11,12 @@
   <name>SecLogin</name>
 
   <dependencies>
+    <dependency>
+      <groupId>seclogin</groupId>
+      <artifactId>interpolation_2.10</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+
     <!-- general Java utilities -->
     <dependency>
       <groupId>com.google.guava</groupId>

@@ -20,9 +20,9 @@ public class HistoryFile {
     private static final HashFunction USER_HASH_FN = Hashing.sha256();
 
     private final byte[] userHash;
-    private final FeatureDistinguishment[][] features;
+    private final Feature[][] features;
 
-    private HistoryFile(byte[] userHash, FeatureDistinguishment[][] features) {
+    private HistoryFile(byte[] userHash, Feature[][] features) {
         this.userHash = userHash;
         this.features = features;
     }
@@ -31,7 +31,7 @@ public class HistoryFile {
         byte[] userHash = USER_HASH_FN.hashString(user).asBytes();
         return new HistoryFile(
                 userHash,
-                new FeatureDistinguishment[Parameters.H][Parameters.M]);
+                new Feature[Parameters.H][Parameters.M]);
     }
 
     public void write(OutputStream outputStream, BigInteger hpwd) throws IOException {
@@ -41,15 +41,15 @@ public class HistoryFile {
         out.close();
     }
 
-    public static HistoryFile read(InputStream inputStream, BigInteger hpwd)
-            throws IOException, IndecipherableHistoryFileException {
+    public static Encrypted read(InputStream inputStream) throws IOException {
         BufferedInputStream in = new BufferedInputStream(inputStream);
+        byte[] ciphertext;
         try {
-            byte[] ciphertext = ByteStreams.toByteArray(in);
-            return fromEncryptedByteArray(ciphertext, hpwd);
+            ciphertext = ByteStreams.toByteArray(in);
         } finally {
             in.close();
         }
+        return new Encrypted(ciphertext);
     }
 
     private static HistoryFile fromEncryptedByteArray(byte[] ciphertext, BigInteger hpwd)
@@ -79,7 +79,7 @@ public class HistoryFile {
         checkState(features.length == Parameters.H);
         for (int j = 0; j < features.length; j++) {
             for (int i = 0; i < features[j].length; i++) {
-                plaintext[offset + (j * Parameters.M) + i] = FeatureDistinguishment.asByte(features[j][i]);
+                plaintext[offset + (j * Parameters.M) + i] = Feature.asByte(features[j][i]);
             }
         }
 
@@ -97,29 +97,29 @@ public class HistoryFile {
         System.arraycopy(plaintext, offset, userHash, 0, userHash.length);
         offset += userHash.length;
 
-        FeatureDistinguishment[][] features = new FeatureDistinguishment[Parameters.H][Parameters.M];
+        Feature[][] features = new Feature[Parameters.H][Parameters.M];
         for (int j = 0; j < features.length; j++) {
             for (int i = 0; i < features[j].length; i++) {
-                features[j][i] = FeatureDistinguishment.fromByte(plaintext[offset + (j * Parameters.M) + i]);
+                features[j][i] = Feature.fromByte(plaintext[offset + (j * Parameters.M) + i]);
             }
         }
 
         return new HistoryFile(userHash, features);
     }
 
-    public boolean userHashEquals(byte[] hash) {
-        return Arrays.equals(userHash, hash);
+    public boolean userHashEquals(String user) {
+        return Arrays.equals(userHash, USER_HASH_FN.hashString(user).asBytes());
     }
 
-    public HistoryFile withMostRecentFeatures(FeatureDistinguishment[] mostRecentFeatures) {
+    public HistoryFile withMostRecentFeatures(Feature[] mostRecentFeatures) {
         checkArgument(mostRecentFeatures.length == Parameters.M);
-        FeatureDistinguishment[][] shiftedFeatures = new FeatureDistinguishment[features.length][];
+        Feature[][] shiftedFeatures = new Feature[features.length][];
         shiftedFeatures[0] = mostRecentFeatures;
         System.arraycopy(features, 0, shiftedFeatures, 1, shiftedFeatures.length - 1);
         return new HistoryFile(userHash, shiftedFeatures);
     }
 
-    public FeatureDistinguishment[] getFeatures(int attempt) {
+    public Feature[] getFeatures(int attempt) {
         checkArgument(attempt >= 0 && attempt < features.length);
         return features[attempt];
     }
@@ -145,5 +145,17 @@ public class HistoryFile {
         int result = Arrays.hashCode(userHash);
         result = 31 * result + Arrays.deepHashCode(features);
         return result;
+    }
+
+    public static class Encrypted {
+        private final byte[] ciphertext;
+
+        private Encrypted(byte[] ciphertext) {
+            this.ciphertext = ciphertext;
+        }
+
+        public HistoryFile decrypt(BigInteger hpwd) throws IndecipherableHistoryFileException {
+            return HistoryFile.fromEncryptedByteArray(ciphertext, hpwd);
+        }
     }
 }

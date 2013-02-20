@@ -27,7 +27,7 @@ public class HistoryFileTest {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.write(out, hpwd);
 
-        HistoryFile read = HistoryFile.read(new ByteArrayInputStream(out.toByteArray()), hpwd);
+        HistoryFile read = HistoryFile.read(new ByteArrayInputStream(out.toByteArray())).decrypt(hpwd);
 
         Assert.assertEquals(written, read);
     }
@@ -42,7 +42,7 @@ public class HistoryFileTest {
         written.write(out, hpwd);
 
         BigInteger wrongHpwd = new BigInteger(Parameters.Q_LEN, random);
-        HistoryFile readWithWrongHpwd = HistoryFile.read(new ByteArrayInputStream(out.toByteArray()), wrongHpwd);
+        HistoryFile readWithWrongHpwd = HistoryFile.read(new ByteArrayInputStream(out.toByteArray())).decrypt(wrongHpwd);
 
         Assert.assertNotEquals(written, readWithWrongHpwd);
     }
@@ -55,16 +55,16 @@ public class HistoryFileTest {
         return written;
     }
 
-    private FeatureDistinguishment[] randomFeatures() {
-        FeatureDistinguishment[] features = new FeatureDistinguishment[Parameters.M];
+    private Feature[] randomFeatures() {
+        Feature[] features = new Feature[Parameters.M];
         for (int i = 0; i < features.length; i++) {
             features[i] = randomFeature();
         }
         return features;
     }
 
-    private FeatureDistinguishment randomFeature() {
-        int i = random.nextInt(FeatureDistinguishment.values().length + 1);
-        return i == 0 ? null : FeatureDistinguishment.values()[i - 1];
+    private Feature randomFeature() {
+        int i = random.nextInt(Feature.values().length + 1);
+        return i == 0 ? null : Feature.values()[i - 1];
     }
 }

@@ -7,9 +7,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
+import seclogin.interpolation.InterpolationForJava;
 import seclogin.io.ZqInputStream;
 import seclogin.io.ZqOutputStream;
 import seclogin.math.G;
@@ -19,10 +22,11 @@ import seclogin.math.Zq;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static seclogin.Feature.ALPHA;
 
 public class InstructionTable {
 
-    private static final BigInteger TWO = BigInteger.valueOf(2);
     public static final int R_LEN_IN_BYTES = Parameters.K / Byte.SIZE;
 
     private final Zq zq;
@@ -36,14 +40,43 @@ public class InstructionTable {
         this.table = table;
     }
 
+    public BigInteger interpolateHpwd(Password pwd, Feature[] features) {
+        List<BigInteger> xys = xys(pwd, features);
+        return new InterpolationForJava().yIntercept(xys, zq.q);
+    }
+
+    private List<BigInteger> xys(Password pwd, Feature[] features) {
+        checkArgument(features.length == table.length);
+
+        List<BigInteger> xys = Lists.newArrayListWithCapacity(features.length * 2);
+        for (int i = 0; i < features.length; i++) {
+            Feature feature = features[i];
+            checkNotNull(feature);
+
+            Entry entry = table[i];
+
+            G g = G.forSaltedPassword(r, pwd, zq);
+            P p = new P(r, zq);
+
+            BigInteger indexedInput = BigInteger.valueOf(feature == ALPHA ? (2*i) : ((2*i)+1));
+            BigInteger x = p.of(indexedInput);
+            BigInteger y = (feature == ALPHA ? entry.alpha : entry.beta).subtract(g.of(indexedInput));
+
+            xys.add(x);
+            xys.add(y);
+        }
+        checkState(xys.size() == Parameters.M * 2);
+        return xys;
+    }
+
     public static InstructionTableAndHardenedPassword generate(int numFeatures, Password pwd, Random random) {
         return generate(
-                new FeatureDistinguishment[numFeatures], // no distinguishing features yet
+                new Feature[numFeatures], // no distinguishing features yet
                 pwd,
                 random);
     }
 
-    public static InstructionTableAndHardenedPassword generate(FeatureDistinguishment[] features,
+    public static InstructionTableAndHardenedPassword generate(Feature[] features,
                                                                Password pwd,
                                                                Random random) {
         checkNotNull(features);
@@ -62,15 +95,15 @@ public class InstructionTable {
 
         Entry[] table = new Entry[features.length];
         for (int i = 0; i < table.length; i++) {
-            BigInteger twoI = BigInteger.valueOf(i).multiply(TWO);
+            BigInteger twoI = BigInteger.valueOf(2*i);
             BigInteger alpha = f.y(p.of(twoI)).add(g.of(twoI)).mod(zq.q);
-            if (features[i] == FeatureDistinguishment.BETA) {
+            if (features[i] == Feature.BETA) {
                 alpha = zq.randomElementNotEqualTo(alpha, random);
             }
 
-            BigInteger twoIPlusOne = twoI.add(BigInteger.ONE);
+            BigInteger twoIPlusOne = BigInteger.valueOf((2*i)+i);
             BigInteger beta = f.y(p.of(twoIPlusOne)).add(g.of(twoIPlusOne)).mod(zq.q);
-            if (features[i] == FeatureDistinguishment.ALPHA) {
+            if (features[i] == ALPHA) {
                 beta = zq.randomElementNotEqualTo(beta, random);
             }
             table[i] = new Entry(alpha, beta);
