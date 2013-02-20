@@ -99,7 +99,11 @@ public class SecLogin {
     }
 
     private File userStateDir() {
-        return new File(".");
+        File file = new File(".seclogin");
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        return file;
     }
 
     public static void main(String[] args) throws IOException {
