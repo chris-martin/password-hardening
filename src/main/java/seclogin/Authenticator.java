@@ -33,8 +33,10 @@ public class Authenticator {
 
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
+        List<Feature> features = historyFile.deriveFeatures(measurementParams);
+        Feature[] featuresArray = features.toArray(new Feature[features.size()]);
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                InstructionTable.generate(historyFile.deriveFeatures(measurementParams), password, random);
+            InstructionTable.generate(featuresArray, password, random);
 
         return new UserState(userState.user, tableAndHpwd.table, historyFile.encrypt(tableAndHpwd.hpwd));
     }

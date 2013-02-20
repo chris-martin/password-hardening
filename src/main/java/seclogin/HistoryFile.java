@@ -9,6 +9,7 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -136,19 +137,20 @@ public class HistoryFile {
         return new HistoryFile(historyFileParams, userHash, Math.min(historyFileParams.maxNrOfEntries(), numMeasurements + 1), shiftedMeasurements);
     }
 
-    public Feature[] deriveFeatures(List<MeasurementParams> params) {
+
+    public List<Feature> deriveFeatures(List<MeasurementParams> params) {
         checkArgument(params.size() == this.historyFileParams.nrOfFeatures());
 
         SummaryStatistics[] stats = calculateStats();
-        Feature[] features = new Feature[this.historyFileParams.nrOfFeatures()];
-        for (int i = 0; i < features.length; i++) {
+        List<Feature> features = new ArrayList<Feature>();
+        for (int i = 0; i < this.historyFileParams.nrOfFeatures(); i++) {
             StatisticalSummary userStats = stats[i];
             double mu = userStats.getMean();
             double sigma = userStats.getStandardDeviation();
             double t = params.get(i).T();
             double k = params.get(i).K();
             if (numMeasurements < measurements.length || Math.abs(mu - t) > (k * sigma)) {
-                features[i] = mu < t ? ALPHA : BETA;
+                features.add(mu < t ? ALPHA : BETA);
             }
         }
         return features;
