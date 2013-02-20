@@ -14,6 +14,11 @@ import scala.collection.JavaConversions._
   */
 case class Interpolation(points: Seq[Point])(implicit q: Mod) extends Points {
 
+  /** A Java-friendly constructor.
+    * @param xys ''(x, y)'' pairs that reside in ''f'', given as
+    * ''(x_1, y_1, x_2, x_2, ..., x_n, y_n)''
+    * @param q size of the field over which ''f'' is defined
+    */
   def this(xys: JList[JBigInt], q: JBigInt) =
     this(Seq(xys.grouped(2).map(xy => Point(xy(0), xy(1))).toSeq:_*))(Mod(q))
 
