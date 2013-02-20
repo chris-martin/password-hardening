@@ -22,7 +22,7 @@ public class InstructionTableTest {
 
     @Test
     public void testWriteAndRead() throws Exception {
-        InstructionTable written = InstructionTable.generate(new Password("asdf".toCharArray()), random).table;
+        InstructionTable written = InstructionTable.generate(new Password("asdf"), random).table;
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.write(out);
@@ -34,7 +34,7 @@ public class InstructionTableTest {
 
     @Test
     public void testInterpolateHpwd() throws Exception {
-        Password pwd = new Password("asdf".toCharArray());
+        Password pwd = new Password("asdf");
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd = InstructionTable.generate(pwd, random);
 
         Feature[] features = new Feature[Parameters.M];
