@@ -13,17 +13,18 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Random;
 
+import static com.google.common.base.Preconditions.checkState;
+
 public class SecLogin {
 
     private final ConsoleReader console;
     private final Random random;
     private final QuestionBank questionBank;
     private final Authenticator authenticator;
-    private final HistoryFileParams historyFileParams;
+    private final HistoryFileParams historyFileParams = new HistoryFileParams(2);
 
     public SecLogin(ConsoleReader console, Random random, QuestionBank questionBank) {
-        int nrOfFeatures = questionBank.getQuestions().size();
-        historyFileParams = new HistoryFileParams(2, nrOfFeatures);
+        checkState(questionBank.getQuestions().size() == Parameters.M);
         this.console = console;
         this.random = random;
         this.questionBank = questionBank;
@@ -61,7 +62,7 @@ public class SecLogin {
     }
 
     double[] askQuestions() throws IOException {
-        double[] measurements = new double[historyFileParams.nrOfFeatures()];
+        double[] measurements = new double[Parameters.M];
         int i = 0;
         for (Question question : questionBank) {
             measurements[i++] = askQuestion(question);

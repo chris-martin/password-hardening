@@ -22,13 +22,13 @@ public class HistoryFile {
 
     private static final HashFunction USER_HASH_FN = Hashing.sha256();
 
-    private final HistoryFileParams historyFileParams;
+    private final HistoryFileParams params;
     private final byte[] userHash;
     private final int numMeasurements;
     private final double[][] measurements;
 
-    private HistoryFile(HistoryFileParams historyFileParams, byte[] userHash, int numMeasurements, double[][] measurements) {
-        this.historyFileParams = historyFileParams;
+    private HistoryFile(HistoryFileParams params, byte[] userHash, int numMeasurements, double[][] measurements) {
+        this.params = params;
         this.userHash = userHash;
         this.numMeasurements = numMeasurements;
         this.measurements = measurements;
@@ -36,8 +36,11 @@ public class HistoryFile {
 
     public static HistoryFile emptyHistoryFile(String user, HistoryFileParams params) {
         byte[] userHash = USER_HASH_FN.hashString(user).asBytes();
-        return new HistoryFile(params, userHash, 0,
-            new double[params.maxNrOfEntries()][params.nrOfFeatures()]);
+        return new HistoryFile(
+                params,
+                userHash,
+                0,
+                new double[params.maxNrOfEntries()][Parameters.M]);
     }
 
     public Encrypted encrypt(BigInteger hpwd) {
@@ -82,10 +85,10 @@ public class HistoryFile {
         ByteBuffer.wrap(plaintext, offset, Integer.SIZE/Byte.SIZE).putInt(numMeasurements);
         offset += Integer.SIZE/Byte.SIZE;
 
-        checkState(measurements.length == historyFileParams.maxNrOfEntries());
+        checkState(measurements.length == params.maxNrOfEntries());
         for (int j = 0; j < measurements.length; j++) {
             for (int i = 0; i < measurements[j].length; i++) {
-                ByteBuffer.wrap(plaintext, offset + doubleByteOffset(j, i, historyFileParams), DOUBLE_SIZE_IN_BYTES).putDouble(measurements[j][i]);
+                ByteBuffer.wrap(plaintext, offset + doubleByteOffset(j, i), DOUBLE_SIZE_IN_BYTES).putDouble(measurements[j][i]);
             }
         }
 
@@ -95,11 +98,11 @@ public class HistoryFile {
     private int sizeInBytes() {
         return (USER_HASH_FN.bits() / Byte.SIZE) +
                 (Integer.SIZE/Byte.SIZE) +
-                (historyFileParams.maxNrOfEntries() * historyFileParams.nrOfFeatures() * DOUBLE_SIZE_IN_BYTES);
+                (params.maxNrOfEntries() * Parameters.M * DOUBLE_SIZE_IN_BYTES);
     }
 
-    private static int doubleByteOffset(int j, int i, HistoryFileParams historyFileParams) {
-        return (DOUBLE_SIZE_IN_BYTES * ((j* historyFileParams.nrOfFeatures())+i));
+    private static int doubleByteOffset(int j, int i) {
+        return (DOUBLE_SIZE_IN_BYTES * ((j* Parameters.M)+i));
     }
 
     private static final int DOUBLE_SIZE_IN_BYTES = Double.SIZE / Byte.SIZE;
@@ -114,10 +117,10 @@ public class HistoryFile {
         int numMeasurements = ByteBuffer.wrap(plaintext, offset, Integer.SIZE/Byte.SIZE).getInt();
         offset += Integer.SIZE/Byte.SIZE;
 
-        double[][] measurements = new double[params.maxNrOfEntries()][params.nrOfFeatures()];
+        double[][] measurements = new double[params.maxNrOfEntries()][Parameters.M];
         for (int j = 0; j < measurements.length; j++) {
             for (int i = 0; i < measurements[j].length; i++) {
-                measurements[j][i] = ByteBuffer.wrap(plaintext, offset + doubleByteOffset(j, i, params), Double.SIZE/Byte.SIZE).getDouble();
+                measurements[j][i] = ByteBuffer.wrap(plaintext, offset + doubleByteOffset(j, i), Double.SIZE/Byte.SIZE).getDouble();
             }
         }
 
@@ -129,24 +132,24 @@ public class HistoryFile {
     }
 
     public HistoryFile withMostRecentMeasurements(double[] mostRecentMeasurements) {
-        checkArgument(mostRecentMeasurements.length == historyFileParams.nrOfFeatures());
+        checkArgument(mostRecentMeasurements.length == Parameters.M);
         double[][] shiftedMeasurements = new double[measurements.length][];
         shiftedMeasurements[0] = mostRecentMeasurements;
         System.arraycopy(measurements, 0, shiftedMeasurements, 1, shiftedMeasurements.length - 1);
-        return new HistoryFile(historyFileParams, userHash, Math.min(historyFileParams.maxNrOfEntries(), numMeasurements + 1), shiftedMeasurements);
+        return new HistoryFile(params, userHash, Math.min(params.maxNrOfEntries(), numMeasurements + 1), shiftedMeasurements);
     }
 
     public Feature[] deriveFeatures(List<MeasurementParams> params) {
-        checkArgument(params.size() == this.historyFileParams.nrOfFeatures());
+        checkArgument(params.size() == Parameters.M);
 
         SummaryStatistics[] stats = calculateStats();
-        Feature[] features = new Feature[this.historyFileParams.nrOfFeatures()];
+        Feature[] features = new Feature[Parameters.M];
         for (int i = 0; i < features.length; i++) {
             StatisticalSummary userStats = stats[i];
             double mu = userStats.getMean();
             double sigma = userStats.getStandardDeviation();
-            double t = params.get(i).T();
-            double k = params.get(i).K();
+            double t = params.get(i).t();
+            double k = params.get(i).k();
             if (numMeasurements < measurements.length || Math.abs(mu - t) > (k * sigma)) {
                 features[i] = mu < t ? ALPHA : BETA;
             }
@@ -155,7 +158,7 @@ public class HistoryFile {
     }
 
     private SummaryStatistics[] calculateStats() {
-        SummaryStatistics[] stats = new SummaryStatistics[historyFileParams.nrOfFeatures()];
+        SummaryStatistics[] stats = new SummaryStatistics[Parameters.M];
         for (int i = 0; i < stats.length; i++) {
             stats[i] = new SummaryStatistics();
             for (double[] measurement : measurements) {

@@ -1,9 +1,6 @@
 package seclogin
 
-/** @param responseMean response mean
-  * @param stDevMultiplier standard deviation multiplier
+/** @param t response mean
+  * @param k standard deviation multiplier
   */
-case class MeasurementParams(responseMean: Double, stDevMultiplier: Double) {
-  def T: Double = responseMean
-  def K: Double = stDevMultiplier
-}
+case class MeasurementParams(t: Double, k: Double)

@@ -21,7 +21,7 @@ public class Authenticator {
     }
 
     public UserState authenticate(UserState userState, Password password, double[] measurements) {
-        checkState(measurements.length == historyFileParams.nrOfFeatures());
+        checkState(measurements.length == Parameters.M);
         
         BigInteger hpwd = userState.instructionTable.interpolateHpwd(password, features(measurements));
         HistoryFile historyFile;
@@ -42,7 +42,7 @@ public class Authenticator {
     private Feature[] features(double[] measurements) {
         Feature[] features = new Feature[measurementParams.size()];
         for (int i = 0; i < features.length; i++) {
-            features[i] = measurements[i] < measurementParams.get(i).responseMean() ? ALPHA : BETA;
+            features[i] = measurements[i] < measurementParams.get(i).t() ? ALPHA : BETA;
         }
         return features;
     }
