@@ -3,7 +3,6 @@ package seclogin.math
 import java.math.BigInteger
 import org.scalatest._
 import scala.collection.JavaConversions._
-import scala.util.Random
 
 class InterpolationSpec extends FreeSpec {
 
