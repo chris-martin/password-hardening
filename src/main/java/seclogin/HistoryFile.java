@@ -16,6 +16,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static seclogin.Feature.ALPHA;
 import static seclogin.Feature.BETA;
 
+/* A history file for a particular user. */
 public class HistoryFile {
 
     private static final HashFunction USER_HASH_FN = Hashing.sha256();
@@ -23,7 +24,6 @@ public class HistoryFile {
     private final byte[] userHash;
     private final int numMeasurements;
     private final double[][] measurements;
-    private StatisticalSummary[] stats;
 
     private HistoryFile(byte[] userHash, int numMeasurements, double[][] measurements) {
         this.userHash = userHash;
@@ -135,11 +135,21 @@ public class HistoryFile {
         return new HistoryFile(userHash, Math.max(Parameters.H, numMeasurements + 1), shiftedMeasurements);
     }
 
-    private StatisticalSummary getStats(int i) {
-        if (stats == null) {
-            stats = calculateStats();
+    public Feature[] deriveFeatures(QuestionBank questionBank) {
+        checkArgument(questionBank.getQuestions().size() == Parameters.M);
+
+        SummaryStatistics[] stats = calculateStats();
+        Feature[] features = new Feature[Parameters.M];
+        for (int i = 0; i < features.length; i++) {
+            StatisticalSummary userStats = stats[i];
+            double mu = userStats.getMean();
+            double sigma = userStats.getStandardDeviation();
+            double t = questionBank.getQuestions().get(i).getResponseMean();
+            if (numMeasurements < Parameters.H || Math.abs(mu - t) > (Parameters.K * sigma)) {
+                features[i] = mu < t ? ALPHA : BETA;
+            }
         }
-        return stats[i];
+        return features;
     }
 
     private SummaryStatistics[] calculateStats() {
@@ -151,22 +161,6 @@ public class HistoryFile {
             }
         }
         return stats;
-    }
-
-    public Feature[] deriveFeatures(QuestionBank questionBank) {
-        checkArgument(questionBank.getQuestions().size() == Parameters.M);
-
-        Feature[] features = new Feature[Parameters.M];
-        for (int i = 0; i < features.length; i++) {
-            StatisticalSummary userStats = getStats(i);
-            double mu = userStats.getMean();
-            double sigma = userStats.getStandardDeviation();
-            double t = questionBank.getQuestions().get(i).getResponseMean();
-            if (numMeasurements < Parameters.H || Math.abs(mu - t) > (Parameters.K * sigma)) {
-                features[i] = mu < t ? ALPHA : BETA;
-            }
-        }
-        return features;
     }
 
     @Override
@@ -200,6 +194,7 @@ public class HistoryFile {
                 '}';
     }
 
+    /** An encrypted history file. */
     public static class Encrypted {
         private final byte[] ciphertext;
 
