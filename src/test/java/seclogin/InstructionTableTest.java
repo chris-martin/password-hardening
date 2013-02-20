@@ -25,7 +25,7 @@ public class InstructionTableTest {
     @Test
     public void testWriteAndRead() throws Exception {
         InstructionTable written =
-            InstructionTable.generate(new Feature[nrOfFeatures], new Password("asdf"), random).table;
+            InstructionTable.generate(new FeatureValue[nrOfFeatures], new Password("asdf"), random).table;
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.write(out);
@@ -39,16 +39,16 @@ public class InstructionTableTest {
     public void testInterpolateHpwd() throws Exception {
         Password pwd = new Password("asdf");
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(new Feature[nrOfFeatures], pwd, random);
+            InstructionTable.generate(new FeatureValue[nrOfFeatures], pwd, random);
 
-        Feature[] features = new Feature[nrOfFeatures];
+        FeatureValue[] featureValues = new FeatureValue[nrOfFeatures];
 
-        Arrays.fill(features, Feature.ALPHA);
-        BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, features);
+        Arrays.fill(featureValues, FeatureValue.ALPHA);
+        BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, featureValues);
         Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
 
-        Arrays.fill(features, Feature.BETA);
-        hpwd = tableAndHpwd.table.interpolateHpwd(pwd, features);
+        Arrays.fill(featureValues, FeatureValue.BETA);
+        hpwd = tableAndHpwd.table.interpolateHpwd(pwd, featureValues);
         Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
     }
 }

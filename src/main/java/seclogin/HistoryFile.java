@@ -15,8 +15,8 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static seclogin.Feature.ALPHA;
-import static seclogin.Feature.BETA;
+import static seclogin.FeatureValue.ALPHA;
+import static seclogin.FeatureValue.BETA;
 
 /* A history file for a particular user. */
 public class HistoryFile {
@@ -138,11 +138,11 @@ public class HistoryFile {
     }
 
 
-    public List<Feature> deriveFeatures(List<MeasurementParams> params) {
+    public List<FeatureValue> deriveFeatures(List<MeasurementParams> params) {
         checkArgument(params.size() == historyFileParams.nrOfFeatures());
 
         List<MeasurementStats> stats = calculateStats();
-        List<Feature> features = new ArrayList<Feature>();
+        List<FeatureValue> featureValues = new ArrayList<FeatureValue>();
         for (int i = 0; i < historyFileParams.nrOfFeatures(); i++) {
             MeasurementStats userStats = stats.get(i);
             double mu = userStats.mu();
@@ -151,9 +151,9 @@ public class HistoryFile {
             double k = params.get(i).k();
             boolean isDistinguishing = numMeasurements < measurements.length
                     || Math.abs(mu - t) > (k * sigma);
-            features.add(isDistinguishing ? (mu < t ? ALPHA : BETA) : null);
+            featureValues.add(isDistinguishing ? (mu < t ? ALPHA : BETA) : null);
         }
-        return features;
+        return featureValues;
     }
 
     private List<MeasurementStats> calculateStats() {

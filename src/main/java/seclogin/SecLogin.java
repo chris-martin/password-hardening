@@ -91,7 +91,7 @@ public class SecLogin {
 
     private UserState generateNewUserState(String user, Password password) {
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(new Feature[historyFileParams.nrOfFeatures()], password, random);
+            InstructionTable.generate(new FeatureValue[historyFileParams.nrOfFeatures()], password, random);
         HistoryFile.Encrypted historyFile =
             HistoryFile.emptyHistoryFile(user, historyFileParams).encrypt(tableAndHpwd.hpwd);
         return new UserState(user, tableAndHpwd.table, historyFile);
