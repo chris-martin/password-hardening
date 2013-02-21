@@ -41,8 +41,13 @@ public class HistoryFile {
             new double[params.maxNrOfEntries()][params.nrOfFeatures()]);
     }
 
+    /**
+     * @return this history file encrypted with the given hardened password
+     */
     public Encrypted encrypt(BigInteger hpwd) {
-        return new Encrypted(asEncryptedByteArray(hpwd));
+        byte[] plaintext = asByteArray();
+        byte[] ciphertext = Crypto.aes128Encrypt(hpwd, plaintext);
+        return new Encrypted(ciphertext);
     }
 
     public static Encrypted read(InputStream inputStream) throws IOException {
@@ -74,12 +79,6 @@ public class HistoryFile {
             out.flush();
             out.close();
         }
-    }
-
-    /** Returns this history file encrypted with the given hardened password. */
-    private byte[] asEncryptedByteArray(BigInteger hpwd) {
-        byte[] plaintext = asByteArray();
-        return Crypto.aes128Encrypt(hpwd, plaintext);
     }
 
     /** Decrypts the given encrypted history file with the given hardened password. */
