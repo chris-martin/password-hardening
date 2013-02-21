@@ -1,9 +1,9 @@
 package seclogin.math;
 
-import seclogin.Password;
-import java.math.BigInteger;
-import javax.crypto.SecretKey;
 import seclogin.Crypto;
+
+import javax.crypto.SecretKey;
+import java.math.BigInteger;
 
 /**
  * A pseudorandom function family over Z_q:
@@ -19,11 +19,11 @@ public class G {
         this.zq = zq;
     }
 
-    public static G forSaltedPassword(byte[] salt, Password pwd, Zq zq) {
-        return new G(Crypto.generateAes128Key(salt, pwd.asChars()), zq);
+    public static G forSaltedPassword(byte[] salt, String password, Zq zq) {
+        return new G(Crypto.deriveAes128Key(salt, password.toCharArray()), zq);
     }
 
-    public BigInteger of(BigInteger input) {
-        return new BigInteger(Crypto.aes128Encrypt(key, input.toByteArray())).mod(zq.q);
+    public BigInteger of(int input) {
+        return new BigInteger(Crypto.aes128Encrypt(key, BigInteger.valueOf(input).toByteArray())).mod(zq.q);
     }
 }

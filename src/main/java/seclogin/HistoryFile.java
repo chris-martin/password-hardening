@@ -1,16 +1,19 @@
 package seclogin;
 
-import com.google.common.collect.Lists;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
-import java.io.*;
+import javax.annotation.Nullable;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -30,10 +33,6 @@ public class HistoryFile {
         this.userHash = userHash;
         this.numMeasurements = numMeasurements;
         this.measurements = measurements;
-    }
-
-    public boolean isFull() {
-        return numMeasurements == measurements.length;
     }
 
     public static HistoryFile emptyHistoryFile(String user, HistoryFileParams params) {
@@ -57,6 +56,33 @@ public class HistoryFile {
         return new Encrypted(ciphertext);
     }
 
+    /** An encrypted history file. */
+    public static class Encrypted {
+        private final byte[] ciphertext;
+
+        private Encrypted(byte[] ciphertext) {
+            this.ciphertext = ciphertext;
+        }
+
+        public HistoryFile decrypt(BigInteger hpwd, HistoryFileParams params) throws IndecipherableHistoryFileException {
+            return HistoryFile.fromEncryptedByteArray(ciphertext, hpwd, params);
+        }
+
+        public void write(OutputStream outputStream) throws IOException {
+            BufferedOutputStream out = new BufferedOutputStream(outputStream);
+            out.write(ciphertext);
+            out.flush();
+            out.close();
+        }
+    }
+
+    /** Returns this history file encrypted with the given hardened password. */
+    private byte[] asEncryptedByteArray(BigInteger hpwd) {
+        byte[] plaintext = asByteArray();
+        return Crypto.aes128Encrypt(hpwd, plaintext);
+    }
+
+    /** Decrypts the given encrypted history file with the given hardened password. */
     private static HistoryFile fromEncryptedByteArray(byte[] ciphertext, BigInteger hpwd, HistoryFileParams params)
             throws IndecipherableHistoryFileException {
         byte[] plaintext;
@@ -68,11 +94,7 @@ public class HistoryFile {
         return fromByteArray(plaintext, params);
     }
 
-    private byte[] asEncryptedByteArray(BigInteger hpwd) {
-        byte[] plaintext = asByteArray();
-        return Crypto.aes128Encrypt(hpwd, plaintext);
-    }
-
+    /** Serializes this history file (unencrypted). */
     byte[] asByteArray() {
         byte[] plaintext = new byte[sizeInBytes()];
 
@@ -106,6 +128,7 @@ public class HistoryFile {
 
     private static final int DOUBLE_SIZE_IN_BYTES = Double.SIZE / Byte.SIZE;
 
+    /** Deserializes the given unencrypted history file. */
     static HistoryFile fromByteArray(byte[] plaintext, HistoryFileParams params) {
         int offset = 0;
 
@@ -126,10 +149,15 @@ public class HistoryFile {
         return new HistoryFile(params, userHash, numMeasurements, measurements);
     }
 
+    /** Returns whether this history file's user hash matches that of the given user. */
     public boolean userHashEquals(String user) {
         return Arrays.equals(userHash, USER_HASH_FN.hashString(user).asBytes());
     }
 
+    /**
+     * Returns a new history file that includes the given most recent measurements
+     * and excludes the least recent measurements if the file is full.
+     */
     public HistoryFile withMostRecentMeasurements(double[] mostRecentMeasurements) {
         checkArgument(mostRecentMeasurements.length == historyFileParams.nrOfFeatures());
         double[][] shiftedMeasurements = new double[measurements.length][];
@@ -138,14 +166,20 @@ public class HistoryFile {
         return new HistoryFile(historyFileParams, userHash, Math.min(historyFileParams.maxNrOfEntries(), numMeasurements + 1), shiftedMeasurements);
     }
 
-    public List<MeasurementStats> calculateStats() {
-        List<MeasurementStats> stats = Lists.newArrayListWithCapacity(historyFileParams.nrOfFeatures());
-        for (int i = 0; i < stats.size(); i++) {
+    /** Returns statistics of the measurements in this history file, or null if the file is not yet full. */
+    @Nullable
+    public MeasurementStats[] calculateStats() {
+        if (numMeasurements == measurements.length) {
+            return null;
+        }
+
+        MeasurementStats[] stats = new MeasurementStats[historyFileParams.nrOfFeatures()];
+        for (int i = 0; i < stats.length; i++) {
             SummaryStatistics stat = new SummaryStatistics();
             for (double[] measurement : measurements) {
                 stat.addValue(measurement[i]);
             }
-            stats.add(new MeasurementStats(stat.getMean(), stat.getStandardDeviation()));
+            stats[i] = new MeasurementStats(stat.getMean(), stat.getStandardDeviation());
         }
         return stats;
     }
@@ -179,25 +213,5 @@ public class HistoryFile {
                 "userHash=" + Arrays.toString(userHash) +
                 ", measurements=" + (measurements == null ? null : Arrays.deepToString(measurements)) +
                 '}';
-    }
-
-    /** An encrypted history file. */
-    public static class Encrypted {
-        private final byte[] ciphertext;
-
-        private Encrypted(byte[] ciphertext) {
-            this.ciphertext = ciphertext;
-        }
-
-        public HistoryFile decrypt(BigInteger hpwd, HistoryFileParams params) throws IndecipherableHistoryFileException {
-            return HistoryFile.fromEncryptedByteArray(ciphertext, hpwd, params);
-        }
-
-        public void write(OutputStream outputStream) throws IOException {
-            BufferedOutputStream out = new BufferedOutputStream(outputStream);
-            out.write(ciphertext);
-            out.flush();
-            out.close();
-        }
     }
 }

@@ -1,7 +1,6 @@
 package seclogin;
 
-import java.math.BigInteger;
-import java.security.spec.KeySpec;
+import com.google.common.base.Throwables;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -9,8 +8,8 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-
-import com.google.common.base.Throwables;
+import java.math.BigInteger;
+import java.security.spec.KeySpec;
 
 public class Crypto {
 
@@ -41,7 +40,7 @@ public class Crypto {
         }
     }
 
-    public static SecretKey generateAes128Key(byte[] salt, char[] password) {
+    public static SecretKey deriveAes128Key(byte[] salt, char[] password) {
         try {
             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             KeySpec spec = new PBEKeySpec(password, salt, 65536, 128);

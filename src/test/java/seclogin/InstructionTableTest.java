@@ -8,48 +8,48 @@ import seclogin.math.PRG;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
 import java.util.Random;
 
 public class InstructionTableTest {
 
     private Random random;
 
-    private int nrOfFeatures = 3;
+    private MeasurementParams[] measurementParams;
 
     @Before
     public void setUp() throws Exception {
         random = PRG.random();
+        measurementParams = new MeasurementParams[3];
+        for (int i = 0; i < measurementParams.length; i++) {
+            measurementParams[i] = new MeasurementParams(random.nextInt(20), 1.0);
+        }
     }
 
     @Test
     public void testWriteAndRead() throws Exception {
         InstructionTable written =
-            InstructionTable.generate(allFeatureValues(null), new Password("asdf"), random).table;
+            InstructionTable.generate("asdf", measurementParams, null, random).table;
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.write(out);
 
-        InstructionTable read = InstructionTable.read(new ByteArrayInputStream(out.toByteArray()), nrOfFeatures);
+        InstructionTable read = InstructionTable.read(new ByteArrayInputStream(out.toByteArray()), measurementParams);
 
         Assert.assertEquals(written, read);
     }
 
-    private List<FeatureValue> allFeatureValues(FeatureValue value) {
-        return Collections.nCopies(nrOfFeatures, value);
-    }
-
     @Test
     public void testInterpolateHpwd() throws Exception {
-        Password pwd = new Password("asdf");
+        String pwd = "asdf";
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(allFeatureValues(null), pwd, random);
+            InstructionTable.generate(pwd, measurementParams, null, random);
 
-        BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, allFeatureValues(FeatureValue.ALPHA));
-        Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
+        double[] measurements = new double[measurementParams.length];
+        for (int i = 0; i < measurements.length; i++) {
+            measurements[i] = measurementParams[i].responseMean() + random.nextInt(6) - 3;
+        }
 
-        hpwd = tableAndHpwd.table.interpolateHpwd(pwd, allFeatureValues(FeatureValue.BETA));
+        BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, measurements);
         Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
     }
 }

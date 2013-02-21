@@ -11,7 +11,6 @@ import scala.tools.jline.console.ConsoleReader;
 import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.Collections;
 import java.util.Random;
 
 public class SecLogin {
@@ -20,6 +19,7 @@ public class SecLogin {
     private final Random random;
     private final QuestionBank questionBank;
     private final Authenticator authenticator;
+    private final MeasurementParams[] measurementParams;
     private final HistoryFileParams historyFileParams;
 
     public SecLogin(ConsoleReader console, Random random, QuestionBank questionBank) {
@@ -28,9 +28,10 @@ public class SecLogin {
         this.console = console;
         this.random = random;
         this.questionBank = questionBank;
+        measurementParams = questionBank.measurementParams();
         authenticator = new Authenticator(
             random,
-            questionBank.measurementParams(),
+            measurementParams,
             historyFileParams
         );
     }
@@ -39,10 +40,10 @@ public class SecLogin {
         String user;
         while (Strings.isNullOrEmpty(user = console.readLine("login: ")));
 
-        Password password = new Password(readPassword());
+        String password = readPassword();
         double[] measurements = askQuestions();
 
-        UserState userState = UserState.read(userStateDir(), user, historyFileParams.nrOfFeatures());
+        UserState userState = UserState.read(userStateDir(), user, measurementParams);
 
         if (userState != null) {
             userState = authenticator.authenticate(userState, password, measurements);
@@ -82,20 +83,16 @@ public class SecLogin {
     }
 
     public void addUser(String user) throws IOException {
-        String rawPassword;
-        while ((rawPassword = readPassword()) == null || rawPassword.isEmpty());
+        String password;
+        while ((password = readPassword()) == null || password.isEmpty());
 
-        Password password = new Password(rawPassword);
         UserState userState = generateNewUserState(user, password);
         userState.write(userStateDir());
     }
 
-    private UserState generateNewUserState(String user, Password password) {
+    private UserState generateNewUserState(String user, String password) {
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                InstructionTable.generate(
-                        Collections.nCopies(historyFileParams.nrOfFeatures(), (FeatureValue) null),
-                        password,
-                        random);
+                InstructionTable.generate(password, measurementParams, null, random);
         HistoryFile.Encrypted historyFile =
             HistoryFile.emptyHistoryFile(user, historyFileParams).encrypt(tableAndHpwd.hpwd);
         return new UserState(user, tableAndHpwd.table, historyFile);

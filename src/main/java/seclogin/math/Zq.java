@@ -6,16 +6,14 @@ import java.util.Random;
 public class Zq {
 
     public final BigInteger q;
-    private final int qBitLength;
 
     public Zq(BigInteger q) {
         this.q = q;
-        qBitLength = q.bitLength();
     }
 
     public BigInteger randomElement(Random random) {
         BigInteger candidate;
-        while ((candidate = new BigInteger(qBitLength, random)).compareTo(q) >= 0);
+        while ((candidate = new BigInteger(q.bitLength(), random)).compareTo(q) >= 0);
         return candidate;
     }
 

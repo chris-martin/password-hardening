@@ -1,6 +1,10 @@
 package seclogin;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class UserState {
 
@@ -41,11 +45,11 @@ public class UserState {
         }
     }
 
-    public static UserState read(File dir, String user, int nrOfFeatures) {
+    public static UserState read(File dir, String user, MeasurementParams[] measurementParams) {
         InstructionTable instructionTable;
         try {
             FileInputStream in = new FileInputStream(instructionTableFile(dir, user));
-            instructionTable = InstructionTable.read(in, nrOfFeatures);
+            instructionTable = InstructionTable.read(in, measurementParams);
             in.close();
         } catch (FileNotFoundException e) {
             return null;
