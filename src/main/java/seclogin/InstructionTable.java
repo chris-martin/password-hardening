@@ -2,14 +2,15 @@ package seclogin;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
+import scala.math.BigInt;
 import seclogin.io.ZqInputStream;
 import seclogin.io.ZqOutputStream;
 import seclogin.math.Interpolation;
+import seclogin.math.Mod;
 import seclogin.math.PasswordBasedPRF;
 import seclogin.math.Polynomial;
 import seclogin.math.RandomPolynomial;
 import seclogin.math.SparsePRP;
-import seclogin.math.Zq;
 
 import javax.annotation.Nullable;
 import java.io.BufferedInputStream;
@@ -34,15 +35,15 @@ public class InstructionTable {
 
     public static final int R_LEN_IN_BYTES = SecurityParameters.R_LEN / Byte.SIZE;
 
-    private final Zq zq;
+    private final BigInteger q;
     private final byte[] r;
     private final Entry[] table;
 
     private final MeasurementParams[] measurementParams;
 
-    private InstructionTable(Zq zq, byte[] r, Entry[] table, MeasurementParams[] measurementParams) {
+    private InstructionTable(BigInteger q, byte[] r, Entry[] table, MeasurementParams[] measurementParams) {
         checkArgument(r.length == R_LEN_IN_BYTES);
-        this.zq = checkNotNull(zq);
+        this.q = checkNotNull(q);
         this.r = checkNotNull(r);
         this.table = checkNotNull(table);
         this.measurementParams = checkNotNull(measurementParams);
@@ -54,7 +55,7 @@ public class InstructionTable {
      */
     public BigInteger interpolateHpwd(String pwd, double[] measurements) {
         List<BigInteger> xys = xys(pwd, measurements);
-        return new Interpolation(xys, zq.q).yIntercept().bigInteger();
+        return new Interpolation(xys, q).yIntercept().bigInteger();
     }
 
     /**
@@ -64,8 +65,8 @@ public class InstructionTable {
     List<BigInteger> xys(String pwd, double[] measurements) {
         checkArgument(measurements.length == table.length);
 
-        PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, zq);
-        SparsePRP p = new SparsePRP(r, zq.q);
+        PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, q);
+        SparsePRP p = new SparsePRP(r, q);
 
         List<BigInteger> xys = Lists.newArrayListWithCapacity(measurements.length * 2);
         for (int i = 0; i < measurements.length ; i++) {
@@ -74,10 +75,10 @@ public class InstructionTable {
             BigInteger x, y;
             if (measurements[i] < measurementParams[i].responseMean()) {
                 x = p.apply(2*i).bigInteger();
-                y = entry.alpha.subtract(g.of(2*i)).mod(zq.q);
+                y = entry.alpha.subtract(g.of(2*i)).mod(q);
             } else {
                 x = p.apply((2*i)+1).bigInteger();
-                y = entry.beta.subtract(g.of((2*i)+1)).mod(zq.q);
+                y = entry.beta.subtract(g.of((2*i)+1)).mod(q);
             }
 
             xys.add(x);
@@ -98,25 +99,26 @@ public class InstructionTable {
                                                                Random random) {
         checkNotNull(measurementParams);
 
-        Zq zq = new Zq(BigInteger.probablePrime(SecurityParameters.Q_LEN, random));
-        Polynomial f = new RandomPolynomial(random).nextPolynomial(measurementParams.length, zq.q);
+        BigInteger q = BigInteger.probablePrime(SecurityParameters.Q_LEN, random);
+        Mod zq = new Mod(q);
+        Polynomial f = new RandomPolynomial(random).nextPolynomial(measurementParams.length, q);
 
         BigInteger hpwd = f.apply(BigInteger.ZERO);
 
         byte[] r = new byte[R_LEN_IN_BYTES];
         random.nextBytes(r);
 
-        PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, zq);
-        SparsePRP p = new SparsePRP(r, zq.q);
+        PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, q);
+        SparsePRP p = new SparsePRP(r, q);
 
         Entry[] table = new Entry[measurementParams.length];
         for (int i = 0; i < table.length; i++) {
             // calculate `good' values for both alpha and beta
             BigInteger y0 = f.apply(p.apply(2*i)).bigInteger();
-            BigInteger alpha = y0.add(g.of(2*i)).mod(zq.q);
+            BigInteger alpha = y0.add(g.of(2*i)).mod(q);
 
             BigInteger y1 = f.apply(p.apply((2*i)+1)).bigInteger();
-            BigInteger beta = y1.add(g.of((2*i)+1)).mod(zq.q);
+            BigInteger beta = y1.add(g.of((2*i)+1)).mod(q);
 
             if (measurementStats != null) {
                 MeasurementParams system = measurementParams[i];
@@ -130,9 +132,9 @@ public class InstructionTable {
                 // if this feature is distinguishing for this user, make only one of alpha or beta `good'
                 if (Math.abs(user.mean() - system.responseMean()) > (user.stDev() * system.stDevMultiplier())) {
                     if (user.mean() < system.responseMean()) {
-                        beta = zq.randomElementNotEqualTo(beta, random);
+                        beta = zq.randomElementNotEqualTo(BigInt.apply(beta), random).bigInteger();
                     } else {
-                        alpha = zq.randomElementNotEqualTo(alpha, random);
+                        alpha = zq.randomElementNotEqualTo(BigInt.apply(alpha), random).bigInteger();
                     }
                 }
             }
@@ -140,7 +142,7 @@ public class InstructionTable {
             table[i] = new Entry(alpha, beta);
         }
 
-        return new InstructionTableAndHardenedPassword(new InstructionTable(zq, r, table, measurementParams), hpwd);
+        return new InstructionTableAndHardenedPassword(new InstructionTable(q, r, table, measurementParams), hpwd);
     }
 
     /** An instruction table and its corresponding hardened password. */
@@ -199,7 +201,7 @@ public class InstructionTable {
     /** Writes this instruction table to the given stream. */
     public void write(OutputStream outputStream) throws IOException {
         ZqOutputStream out = new ZqOutputStream(new BufferedOutputStream(outputStream));
-        out.writeBigInteger(zq.q);
+        out.writeBigInteger(q);
         out.write(r);
         for (Entry entry : table) {
             entry.write(out);
@@ -223,7 +225,7 @@ public class InstructionTable {
                 }
                 entries[i] = entry;
             }
-            return new InstructionTable(new Zq(q), r, entries, measurementParams);
+            return new InstructionTable(q, r, entries, measurementParams);
         } finally {
             in.close();
         }
@@ -232,7 +234,7 @@ public class InstructionTable {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("q=%s\n", zq.q.toString(16)));
+        s.append(String.format("q=%s\n", q.toString(16)));
         s.append(String.format("r=%s\n", BaseEncoding.base16().lowerCase().encode(r)));
         for (int i = 0; i < table.length; i++) {
             Entry entry = table[i];
@@ -248,7 +250,7 @@ public class InstructionTable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         InstructionTable that = (InstructionTable) o;
-        if (!zq.equals(that.zq)) return false;
+        if (!q.equals(that.q)) return false;
         if (!Arrays.equals(r, that.r)) return false;
         if (!Arrays.equals(table, that.table)) return false;
         return true;
@@ -256,7 +258,7 @@ public class InstructionTable {
 
     @Override
     public int hashCode() {
-        int result = zq.hashCode();
+        int result = q.hashCode();
         result = 31 * result + Arrays.hashCode(r);
         result = 31 * result + table.hashCode();
         return result;
