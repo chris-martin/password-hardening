@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+/** A user's instruction table and history file. */
 public class UserState {
 
     public final String user;

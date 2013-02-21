@@ -11,6 +11,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.spec.KeySpec;
 
+/** Cryptography, in particular AES-128 and password-based key derivation for it. */
 public class Crypto {
 
     private Crypto() {}

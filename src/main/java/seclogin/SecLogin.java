@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Random;
 
+/** The entry point to SecLogin. */
 public class SecLogin {
 
     private final ConsoleReader console;
@@ -98,6 +99,7 @@ public class SecLogin {
         return new UserState(user, tableAndHpwd.table, historyFile);
     }
 
+    /** The directory in which to store user history files and instruction tables. */
     private File userStateDir() {
         File file = new File(".seclogin");
         if (!file.exists()) {

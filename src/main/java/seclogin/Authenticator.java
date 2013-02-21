@@ -1,10 +1,12 @@
 package seclogin;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkState;
 
+/** Authenticates users against their hardened passwords. */
 public class Authenticator {
     
     private final Random random;
@@ -17,8 +19,12 @@ public class Authenticator {
         this.historyFileParams = historyFileParams;
     }
 
+    /**
+     * Authenticates the user by recovering their hardened password from their instruction table
+     * and history file using the given regular password and measurements (responses to questions).
+      */
     public UserState authenticate(UserState userState, String password, double[] measurements) {
-        checkState(measurements.length == historyFileParams.nrOfFeatures());
+        checkState(measurements.length == measurementParams.length);
         
         BigInteger hpwd = userState.instructionTable.interpolateHpwd(password, measurements);
         HistoryFile historyFile;
@@ -28,6 +34,7 @@ public class Authenticator {
             return null;
         }
 
+        System.out.println(Arrays.toString(measurements));
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
@@ -36,6 +43,10 @@ public class Authenticator {
         return new UserState(userState.user, tableAndHpwd.table, historyFile.encrypt(tableAndHpwd.hpwd));
     }
 
+    /**
+     * Decrypts the user's history file using the given hardened password. Returns null if
+     * the password is incorrect or if the decrypted history file is not valid for the user.
+     */
     private HistoryFile decryptHistoryFile(UserState userState, BigInteger hpwd)
             throws IndecipherableHistoryFileException {
         HistoryFile historyFile = userState.historyFile.decrypt(hpwd, historyFileParams);

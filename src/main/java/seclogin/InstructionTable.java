@@ -4,8 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
 import seclogin.io.ZqInputStream;
 import seclogin.io.ZqOutputStream;
-import seclogin.math.G;
 import seclogin.math.Interpolation;
+import seclogin.math.PasswordBasedPRF;
 import seclogin.math.Polynomial;
 import seclogin.math.RandomPolynomial;
 import seclogin.math.SparsePRP;
@@ -25,9 +25,14 @@ import java.util.Random;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * An instruction table that contains values from which the hardened password can be recovered
+ * given the correct regular password and measurements similar to those measured during previous
+ * successful login attempts for the user to which this table belongs.
+ */
 public class InstructionTable {
 
-    public static final int R_LEN_IN_BYTES = Parameters.R_LEN / Byte.SIZE;
+    public static final int R_LEN_IN_BYTES = SecurityParameters.R_LEN / Byte.SIZE;
 
     private final Zq zq;
     private final byte[] r;
@@ -43,15 +48,23 @@ public class InstructionTable {
         this.measurementParams = checkNotNull(measurementParams);
     }
 
+    /**
+     * Interpolates the hardened password using the (x,y) pairs recovered from the table
+     * using the given regular password and measurements.
+     */
     public BigInteger interpolateHpwd(String pwd, double[] measurements) {
         List<BigInteger> xys = xys(pwd, measurements);
         return new Interpolation(xys, zq.q).yIntercept().bigInteger();
     }
 
+    /**
+     * Selects the correct (x,y) pair stored in the table for each feature using the given
+     * measurements and `decrypting` the y value using the given regular password.
+     */
     List<BigInteger> xys(String pwd, double[] measurements) {
         checkArgument(measurements.length == table.length);
 
-        G g = G.forSaltedPassword(r, pwd, zq);
+        PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, zq);
         SparsePRP p = new SparsePRP(r, zq.q);
 
         List<BigInteger> xys = Lists.newArrayListWithCapacity(measurements.length * 2);
@@ -73,13 +86,19 @@ public class InstructionTable {
         return xys;
     }
 
+    /**
+     * Generates the an instruction table and hardened password using the given
+     * regular password and, if supplied, measurement statistics particular to
+     * the user. If no measurement stats are given, the user is not yet
+     * distinguished by any features.
+     */
     public static InstructionTableAndHardenedPassword generate(String pwd,
                                                                MeasurementParams[] measurementParams,
                                                                @Nullable MeasurementStats[] measurementStats,
                                                                Random random) {
         checkNotNull(measurementParams);
 
-        Zq zq = new Zq(BigInteger.probablePrime(Parameters.Q_LEN, random));
+        Zq zq = new Zq(BigInteger.probablePrime(SecurityParameters.Q_LEN, random));
         Polynomial f = new RandomPolynomial(random).nextPolynomial(measurementParams.length, zq.q);
 
         BigInteger hpwd = f.apply(BigInteger.ZERO);
@@ -87,12 +106,12 @@ public class InstructionTable {
         byte[] r = new byte[R_LEN_IN_BYTES];
         random.nextBytes(r);
 
-        G g = G.forSaltedPassword(r, pwd, zq);
+        PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, zq);
         SparsePRP p = new SparsePRP(r, zq.q);
 
         Entry[] table = new Entry[measurementParams.length];
         for (int i = 0; i < table.length; i++) {
-
+            // calculate `good' values for both alpha and beta
             BigInteger y0 = f.apply(p.apply(2*i)).bigInteger();
             BigInteger alpha = y0.add(g.of(2*i)).mod(zq.q);
 
@@ -104,7 +123,11 @@ public class InstructionTable {
                 MeasurementStats user = measurementStats[i];
                 checkNotNull(user);
 
-                // if this feature is distinguishing for this user, make only one of alpha or beta valid
+                System.out.println(system);
+                System.out.println();
+                System.out.println(user);
+
+                // if this feature is distinguishing for this user, make only one of alpha or beta `good'
                 if (Math.abs(user.mean() - system.responseMean()) > (user.stDev() * system.stDevMultiplier())) {
                     if (user.mean() < system.responseMean()) {
                         beta = zq.randomElementNotEqualTo(beta, random);
@@ -120,6 +143,7 @@ public class InstructionTable {
         return new InstructionTableAndHardenedPassword(new InstructionTable(zq, r, table, measurementParams), hpwd);
     }
 
+    /** An instruction table and its corresponding hardened password. */
     public static final class InstructionTableAndHardenedPassword {
         public final InstructionTable table;
         public final BigInteger hpwd;
@@ -130,7 +154,8 @@ public class InstructionTable {
         }
     }
 
-    public static class Entry {
+    /** An entry in the instruction table. */
+    private static class Entry {
         public final BigInteger alpha;
         public final BigInteger beta;
 
@@ -171,6 +196,7 @@ public class InstructionTable {
         }
     }
 
+    /** Writes this instruction table to the given stream. */
     public void write(OutputStream outputStream) throws IOException {
         ZqOutputStream out = new ZqOutputStream(new BufferedOutputStream(outputStream));
         out.writeBigInteger(zq.q);
@@ -181,6 +207,7 @@ public class InstructionTable {
         out.flush();
     }
 
+    /** Reads the instruction table supplied by the given stream. */
     public static InstructionTable read(InputStream inputStream, MeasurementParams[] measurementParams) throws IOException {
         ZqInputStream in = new ZqInputStream(new BufferedInputStream(inputStream));
         try {

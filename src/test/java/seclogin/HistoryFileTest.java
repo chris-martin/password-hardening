@@ -32,7 +32,7 @@ public class HistoryFileTest {
 
     @Test
     public void testEncryptAndDecrypt() throws Exception {
-        BigInteger hpwd = new BigInteger(Parameters.Q_LEN, random);
+        BigInteger hpwd = new BigInteger(SecurityParameters.Q_LEN, random);
 
         HistoryFile original = randomHistoryFile();
         HistoryFile.Encrypted encrypted = original.encrypt(hpwd);
@@ -43,12 +43,12 @@ public class HistoryFileTest {
 
     @Test(expected = IndecipherableHistoryFileException.class)
     public void testEncryptAndDecryptWithWrongHpwd() throws Exception {
-        BigInteger hpwd = new BigInteger(Parameters.Q_LEN, random);
+        BigInteger hpwd = new BigInteger(SecurityParameters.Q_LEN, random);
 
         HistoryFile original = randomHistoryFile();
         HistoryFile.Encrypted encrypted = original.encrypt(hpwd);
 
-        BigInteger wrongHpwd = new BigInteger(Parameters.Q_LEN, random);
+        BigInteger wrongHpwd = new BigInteger(SecurityParameters.Q_LEN, random);
         HistoryFile decrypted = encrypted.decrypt(wrongHpwd, params);
 
         Assert.assertNotEquals(original, decrypted);
@@ -56,7 +56,7 @@ public class HistoryFileTest {
 
     @Test
     public void testWriteAndRead() throws Exception {
-        BigInteger hpwd = new BigInteger(Parameters.Q_LEN, random);
+        BigInteger hpwd = new BigInteger(SecurityParameters.Q_LEN, random);
 
         HistoryFile written = randomHistoryFile();
         ByteArrayOutputStream out = new ByteArrayOutputStream();

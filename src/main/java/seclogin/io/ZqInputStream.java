@@ -1,12 +1,13 @@
 package seclogin.io;
 
+import com.google.common.io.ByteStreams;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 
-import com.google.common.io.ByteStreams;
-
+/** An input stream that can read {@link BigInteger}s written by {@link ZqOutputStream}. */
 public class ZqInputStream extends FilterInputStream {
 
     public ZqInputStream(InputStream in) {
