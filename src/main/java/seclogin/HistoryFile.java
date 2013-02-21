@@ -18,7 +18,10 @@ import java.util.Arrays;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
-/* A history file for a particular user. */
+/*
+ * A history file for a particular user that contains measurements (responses to questions)
+ * from a fixed number of previously successful login attempts.
+ */
 public class HistoryFile {
 
     private static final HashFunction USER_HASH_FN = Hashing.sha256();
@@ -35,16 +38,19 @@ public class HistoryFile {
         this.measurements = measurements;
     }
 
+    /** Returns an empty history file. */
     public static HistoryFile emptyHistoryFile(String user, HistoryFileParams params) {
         byte[] userHash = USER_HASH_FN.hashString(user).asBytes();
         return new HistoryFile(params, userHash, 0,
             new double[params.maxNrOfEntries()][params.nrOfFeatures()]);
     }
 
+    /** Encrypts this history file using the given hardened password. */
     public Encrypted encrypt(BigInteger hpwd) {
         return new Encrypted(asEncryptedByteArray(hpwd));
     }
 
+    /** Reads the encrypted history file supplied by the given stream. */
     public static Encrypted read(InputStream inputStream) throws IOException {
         BufferedInputStream in = new BufferedInputStream(inputStream);
         byte[] ciphertext;
@@ -56,7 +62,7 @@ public class HistoryFile {
         return new Encrypted(ciphertext);
     }
 
-    /** An encrypted history file. */
+    /** An encrypted history file. Must be decrypted with the corresponding hardened password. */
     public static class Encrypted {
         private final byte[] ciphertext;
 
@@ -64,6 +70,7 @@ public class HistoryFile {
             this.ciphertext = ciphertext;
         }
 
+        /** Decrypts the given encrypted history file with the given hardened password. */
         public HistoryFile decrypt(BigInteger hpwd, HistoryFileParams params) throws IndecipherableHistoryFileException {
             return HistoryFile.fromEncryptedByteArray(ciphertext, hpwd, params);
         }
@@ -76,13 +83,11 @@ public class HistoryFile {
         }
     }
 
-    /** Returns this history file encrypted with the given hardened password. */
     private byte[] asEncryptedByteArray(BigInteger hpwd) {
         byte[] plaintext = asByteArray();
         return Crypto.aes128Encrypt(hpwd, plaintext);
     }
 
-    /** Decrypts the given encrypted history file with the given hardened password. */
     private static HistoryFile fromEncryptedByteArray(byte[] ciphertext, BigInteger hpwd, HistoryFileParams params)
             throws IndecipherableHistoryFileException {
         byte[] plaintext;
@@ -116,14 +121,16 @@ public class HistoryFile {
         return plaintext;
     }
 
+    /** Returns the total number of bytes needed to serialize this history file. */
     private int sizeInBytes() {
         return (USER_HASH_FN.bits() / Byte.SIZE) +
                 (Integer.SIZE/Byte.SIZE) +
                 (historyFileParams.maxNrOfEntries() * historyFileParams.nrOfFeatures() * DOUBLE_SIZE_IN_BYTES);
     }
 
-    private static int doubleByteOffset(int j, int i, HistoryFileParams historyFileParams) {
-        return (DOUBLE_SIZE_IN_BYTES * ((j* historyFileParams.nrOfFeatures())+i));
+    /** Returns the byte offset at which to store the measurement value at the given indices. */
+    private static int doubleByteOffset(int featureIndex, int measurementIndex, HistoryFileParams params) {
+        return DOUBLE_SIZE_IN_BYTES * ((featureIndex * params.nrOfFeatures()) + measurementIndex);
     }
 
     private static final int DOUBLE_SIZE_IN_BYTES = Double.SIZE / Byte.SIZE;
@@ -166,10 +173,13 @@ public class HistoryFile {
         return new HistoryFile(historyFileParams, userHash, Math.min(historyFileParams.maxNrOfEntries(), numMeasurements + 1), shiftedMeasurements);
     }
 
-    /** Returns statistics of the measurements in this history file, or null if the file is not yet full. */
+    /**
+     * Returns statistics of the measurements in this history file, or null if the file is not yet full, i.e.,
+     * if the user has not successfully logged at least as many times as measurements can fit in this history file.
+     */
     @Nullable
     public MeasurementStats[] calculateStats() {
-        if (numMeasurements == measurements.length) {
+        if (numMeasurements != measurements.length) {
             return null;
         }
 
@@ -211,7 +221,8 @@ public class HistoryFile {
     public String toString() {
         return "HistoryFile{" +
                 "userHash=" + Arrays.toString(userHash) +
-                ", measurements=" + (measurements == null ? null : Arrays.deepToString(measurements)) +
+                ", numMeasurements=" + numMeasurements +
+                ", measurements=" + (measurements == null ? null : Arrays.asList(measurements)) +
                 '}';
     }
 }
