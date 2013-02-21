@@ -125,10 +125,6 @@ public class InstructionTable {
                 MeasurementStats user = measurementStats[i];
                 checkNotNull(user);
 
-                System.out.println(system);
-                System.out.println();
-                System.out.println(user);
-
                 // if this feature is distinguishing for this user, make only one of alpha or beta `good'
                 if (Math.abs(user.mean() - system.responseMean()) > (user.stDev() * system.stDevMultiplier())) {
                     if (user.mean() < system.responseMean()) {

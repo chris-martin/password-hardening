@@ -1,7 +1,6 @@
 package seclogin;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -34,7 +33,6 @@ public class Authenticator {
             return null;
         }
 
-        System.out.println(Arrays.toString(measurements));
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
