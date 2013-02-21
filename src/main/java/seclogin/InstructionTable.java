@@ -2,13 +2,12 @@ package seclogin;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
-import scala.math.BigInt;
 import seclogin.io.ZqInputStream;
 import seclogin.io.ZqOutputStream;
 import seclogin.math.Interpolation;
-import seclogin.math.Mod;
 import seclogin.math.PasswordBasedPRF;
 import seclogin.math.Polynomial;
+import seclogin.math.RandomBigIntModQ;
 import seclogin.math.RandomPolynomial;
 import seclogin.math.SparsePRP;
 
@@ -100,7 +99,8 @@ public class InstructionTable {
         checkNotNull(measurementParams);
 
         BigInteger q = BigInteger.probablePrime(SecurityParameters.Q_LEN, random);
-        Mod zq = new Mod(q);
+        RandomBigIntModQ randomBigIntModQ = new RandomBigIntModQ(random);
+
         Polynomial f = new RandomPolynomial(random).nextPolynomial(measurementParams.length, q);
 
         BigInteger hpwd = f.apply(BigInteger.ZERO);
@@ -128,9 +128,9 @@ public class InstructionTable {
                 // if this feature is distinguishing for this user, make only one of alpha or beta `good'
                 if (Math.abs(user.mean() - system.responseMean()) > (user.stDev() * system.stDevMultiplier())) {
                     if (user.mean() < system.responseMean()) {
-                        beta = zq.randomElementNotEqualTo(BigInt.apply(beta), random).bigInteger();
+                        beta = randomBigIntModQ.nextBigIntegerModQNotEqualTo(beta, q);
                     } else {
-                        alpha = zq.randomElementNotEqualTo(BigInt.apply(alpha), random).bigInteger();
+                        alpha = randomBigIntModQ.nextBigIntegerModQNotEqualTo(alpha, q);
                     }
                 }
             }
