@@ -1,12 +1,20 @@
 import sbt._
-import Keys._
+import sbt.Keys._
 
 object SecLoginBuild extends Build {
+
+  val junit = {
+    val framework = new TestFramework("com.dadrox.sbt.junit.JunitFramework")
+    Seq(
+      testFrameworks += framework,
+      testOptions in Test += Tests.Argument(framework, "-vo", "-tv")
+    )
+  }
 
   lazy val project = Project(
     id = "seclogin",
     base = file("."),
-    settings = Defaults.defaultSettings ++ Seq(
+    settings = Defaults.defaultSettings ++ junit ++ Seq(
       organization := "seclogin",
       version := "1.0-SNAPSHOT",
       javacOptions ++= Seq(
@@ -29,9 +37,9 @@ object SecLoginBuild extends Build {
       ),
       libraryDependencies ++= Seq(
         "junit" % "junit" % "4.11",
-        "com.dadrox" %% "sbt-junit" % "0.1"
+        "com.dadrox" %% "sbt-junit" % "0.1",
+        "org.mockito" % "mockito-all" % "1.9.5"
       ) map (_ % "test"),
-      testFrameworks += new TestFramework("com.dadrox.sbt.junit.JunitFramework"),
       compileOrder := CompileOrder.ScalaThenJava
     )
   )

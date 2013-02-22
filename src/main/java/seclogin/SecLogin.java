@@ -28,7 +28,7 @@ public class SecLogin {
 
     public void prompt() {
 
-        String user = userInterface.ask("login: ");
+        String user = userInterface.ask(UserInterface.UserPrompt);
         String password = readPassword();
         double[] measurements = askQuestions();
 
@@ -44,12 +44,12 @@ public class SecLogin {
             userStatePersistence.write(userState);
         }
 
-        userInterface.tell(loginCorrect ? "Login success." : "Login failure.");
+        userInterface.tell(loginCorrect ? UserInterface.Success : UserInterface.Failure);
         userInterface.tell("");
     }
 
     private String readPassword() {
-        return userInterface.askSecret("password: ");
+        return userInterface.askSecret(UserInterface.PasswordPrompt);
     }
 
     double[] askQuestions() {
@@ -63,7 +63,7 @@ public class SecLogin {
 
     private double askQuestion(Question question) {
         while (true) {
-            String answer = userInterface.ask(question.question() + " ");
+            String answer = userInterface.ask(question.question());
             try {
                 return Double.parseDouble(answer);
             } catch (NumberFormatException e) {

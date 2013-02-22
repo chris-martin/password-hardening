@@ -78,7 +78,7 @@ public class Console {
         private String ask(String prompt, Character mask) {
             try {
                 while (true) {
-                    String response = console.readLine(prompt, mask);
+                    String response = console.readLine(prompt + " ", mask);
                     if (!Strings.isNullOrEmpty(response)) return response;
                 }
             } catch (IOException e) {

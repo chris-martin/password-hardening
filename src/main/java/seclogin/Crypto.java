@@ -10,6 +10,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.spec.KeySpec;
+import java.util.Arrays;
 
 /** Cryptography, in particular AES-128 and password-based key derivation for it. */
 public class Crypto {
