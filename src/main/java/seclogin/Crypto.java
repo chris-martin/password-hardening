@@ -1,6 +1,7 @@
 package seclogin;
 
 import com.google.common.base.Throwables;
+import com.google.common.hash.Hashing;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -10,24 +11,23 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.spec.KeySpec;
-import java.util.Arrays;
 
-/** Cryptography, in particular AES-128 and password-based key derivation for it. */
+/** Cryptography, in particular AES-256 and password-based key derivation for it. */
 public class Crypto {
 
     private Crypto() {}
 
-    public static byte[] aes128Encrypt(BigInteger key, byte[] plaintext) {
-        return aes128(Cipher.ENCRYPT_MODE, key, plaintext);
+    public static byte[] aesEncrypt(BigInteger key, byte[] plaintext) {
+        return aes(Cipher.ENCRYPT_MODE, key, plaintext);
     }
 
-    public static byte[] aes128Decrypt(BigInteger key, byte[] ciphertext) {
-        return aes128(Cipher.DECRYPT_MODE, key, ciphertext);
+    public static byte[] aesDecrypt(BigInteger key, byte[] ciphertext) {
+        return aes(Cipher.DECRYPT_MODE, key, ciphertext);
     }
 
-    private static byte[] aes128(int mode, BigInteger keyAsInt, byte[] input) {
-        byte[] rawKey = keyAsInt.toByteArray();
-        SecretKey key = new SecretKeySpec(rawKey, rawKey.length - 16, 16, "AES"); // need only 128-bits of hpwd for AES key
+    private static byte[] aes(int mode, BigInteger keyAsInt, byte[] input) {
+        byte[] rawKey = Hashing.sha256().hashBytes(keyAsInt.toByteArray()).asBytes();
+        SecretKey key = new SecretKeySpec(rawKey, "AES");
         return aes(mode, key, input);
     }
 
@@ -42,17 +42,17 @@ public class Crypto {
         }
     }
 
-    public static SecretKey deriveAes128Key(byte[] salt, char[] password) {
+    public static SecretKey deriveAesKey(byte[] salt, char[] password) {
         try {
             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-            KeySpec spec = new PBEKeySpec(password, salt, 65536, 128);
+            KeySpec spec = new PBEKeySpec(password, salt, 65536, 256);
             return new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
 
-    public static byte[] aes128Encrypt(SecretKey key, byte[] input) {
+    public static byte[] aesEncrypt(SecretKey key, byte[] input) {
         return aes(Cipher.ENCRYPT_MODE, key, input);
     }
 }

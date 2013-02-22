@@ -48,7 +48,7 @@ public class HistoryFile {
     /** Encrypts this history file using the given hardened password. */
     public Encrypted encrypt(BigInteger hpwd) {
         byte[] plaintext = asByteArray();
-        byte[] ciphertext = Crypto.aes128Encrypt(hpwd, plaintext);
+        byte[] ciphertext = Crypto.aesEncrypt(hpwd, plaintext);
         return new Encrypted(ciphertext);
     }
 
@@ -90,7 +90,7 @@ public class HistoryFile {
             throws IndecipherableHistoryFileException {
         byte[] plaintext;
         try {
-            plaintext = Crypto.aes128Decrypt(hpwd, ciphertext);
+            plaintext = Crypto.aesDecrypt(hpwd, ciphertext);
         } catch (Exception e) {
             throw new IndecipherableHistoryFileException(e);
         }
