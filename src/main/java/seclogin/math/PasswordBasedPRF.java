@@ -14,18 +14,18 @@ import java.math.BigInteger;
 public class PasswordBasedPRF {
 
     private final SecretKey key;
-    private final BigInteger q;
+    private final Mod q;
 
-    private PasswordBasedPRF(SecretKey key, BigInteger q) {
+    private PasswordBasedPRF(SecretKey key, Mod q) {
         this.key = key;
         this.q = q;
     }
 
-    public static PasswordBasedPRF forSaltedPassword(byte[] salt, String password, BigInteger q) {
+    public static PasswordBasedPRF forSaltedPassword(byte[] salt, String password, Mod q) {
         return new PasswordBasedPRF(Crypto.deriveAes128Key(salt, password.toCharArray()), q);
     }
 
     public BigInteger of(int input) {
-        return new BigInteger(Crypto.aes128Encrypt(key, BigInteger.valueOf(input).toByteArray())).mod(q);
+        return new BigInteger(Crypto.aes128Encrypt(key, BigInteger.valueOf(input).toByteArray())).mod(q.q);
     }
 }

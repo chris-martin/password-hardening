@@ -9,13 +9,6 @@ object SecLoginBuild extends Build {
     settings = Defaults.defaultSettings ++ Seq(
       organization := "seclogin",
       version := "1.0-SNAPSHOT",
-      scalaVersion := "2.10.0",
-      scalacOptions ++= Seq(
-        "-unchecked",
-        "-deprecation",
-        "-feature",
-        "-language:implicitConversions"
-      ),
       javacOptions ++= Seq(
         "-source", "1.6",
         "-target", "1.6"
@@ -35,7 +28,6 @@ object SecLoginBuild extends Build {
         "com.google.code.findbugs" % "jsr305" % "2.0.1"
       ),
       libraryDependencies ++= Seq(
-        "org.scalatest" %% "scalatest" % "1.9.1",
         "junit" % "junit" % "4.11",
         "com.dadrox" %% "sbt-junit" % "0.1"
       ) map (_ % "test"),

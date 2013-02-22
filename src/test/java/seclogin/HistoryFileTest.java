@@ -3,16 +3,15 @@ package seclogin;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import seclogin.math.PRG;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
-import java.util.Random;
+import java.security.SecureRandom;
 
 public class HistoryFileTest {
 
-    private Random random;
+    private SecureRandom random;
 
     int maxNrOfEntries = 2;
     int nrOfFeatures = 3;
@@ -20,7 +19,8 @@ public class HistoryFileTest {
 
     @Before
     public void setUp() throws Exception {
-        random = PRG.random();
+        random = SecureRandom.getInstance("SHA1PRNG");
+        random.setSeed(new byte[0]);
     }
 
     @Test
