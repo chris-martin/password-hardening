@@ -1,16 +1,10 @@
 package seclogin;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
 import scala.tools.jline.console.ConsoleReader;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.Random;
 
 /** The entry point to SecLogin. */
@@ -108,50 +102,4 @@ public class SecLogin {
         return file;
     }
 
-    public static void main(String[] args) throws IOException {
-
-        ArgumentParser parser = ArgumentParsers.newArgumentParser(SecLogin.class.getSimpleName())
-                .defaultHelp(true)
-                .description("Password hardening proof-of-concept");
-        parser.addArgument("-a", "--add")
-                .help("Add specified user");
-
-        Namespace ns;
-        try {
-            ns = parser.parseArgs(args);
-        } catch (ArgumentParserException e) {
-            parser.handleError(e);
-            System.exit(1);
-            return;
-        }
-
-        Random random = new SecureRandom();
-        SecLogin secLogin = new SecLogin(new ConsoleReader(), random, SAMPLE_QUESTION_BANK);
-
-        String usernameToAdd = ns.getString("add");
-        if (usernameToAdd != null) {
-            secLogin.addUser(usernameToAdd);
-            System.out.printf("Added user %s.\n", usernameToAdd);
-            return;
-        }
-
-        secLogin.prompt();
-    }
-
-    private static final QuestionBank SAMPLE_QUESTION_BANK = new QuestionBank(
-        ImmutableList.of(
-            new Question(
-                "How far (in miles) are you from the Georgia Tech campus?",
-                new MeasurementParams(1, 2)
-            ),
-            new Question(
-                "How long (in minutes) do you anticipate being logged in during this session?",
-                new MeasurementParams(20, 2)
-            ),
-            new Question(
-                "How many emails will you send during this session?",
-                new MeasurementParams(2, 2)
-            )
-        )
-    );
 }

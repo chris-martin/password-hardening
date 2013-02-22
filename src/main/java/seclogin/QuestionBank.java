@@ -30,4 +30,22 @@ public class QuestionBank implements Iterable<Question> {
     public Iterator<Question> iterator() {
         return questions.iterator();
     }
+
+    public static QuestionBank createDefault() {
+        return new QuestionBank(ImmutableList.of(
+            new Question(
+                "How far (in miles) are you from the Georgia Tech campus?",
+                new MeasurementParams(1, 2)
+            ),
+            new Question(
+                "How long (in minutes) do you anticipate being logged in during this session?",
+                new MeasurementParams(20, 2)
+            ),
+            new Question(
+                "How many emails will you send during this session?",
+                new MeasurementParams(2, 2)
+            )
+        ));
+    }
+
 }
