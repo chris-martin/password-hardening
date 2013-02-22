@@ -12,7 +12,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.spec.KeySpec;
 
-/** Cryptography, in particular AES-256 and password-based key derivation for it. */
+/** Cryptography, in particular AES-128 and password-based key derivation for it. */
 public class Crypto {
 
     private Crypto() {}
@@ -27,7 +27,7 @@ public class Crypto {
 
     private static byte[] aes(int mode, BigInteger keyAsInt, byte[] input) {
         byte[] rawKey = Hashing.sha256().hashBytes(keyAsInt.toByteArray()).asBytes();
-        SecretKey key = new SecretKeySpec(rawKey, "AES");
+        SecretKey key = new SecretKeySpec(rawKey, 0, 16, "AES"); // truncate key to 128-bits for AES
         return aes(mode, key, input);
     }
 
@@ -45,7 +45,7 @@ public class Crypto {
     public static SecretKey deriveAesKey(byte[] salt, char[] password) {
         try {
             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-            KeySpec spec = new PBEKeySpec(password, salt, 65536, 256);
+            KeySpec spec = new PBEKeySpec(password, salt, 65536, 128);
             return new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
         } catch (Exception e) {
             throw Throwables.propagate(e);
