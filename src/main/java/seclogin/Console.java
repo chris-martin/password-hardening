@@ -1,11 +1,13 @@
 package seclogin;
 
+import com.google.common.base.Strings;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import scala.tools.jline.console.ConsoleReader;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Random;
 
@@ -31,7 +33,7 @@ public class Console {
 
         Random random = new SecureRandom();
         SecLogin secLogin = new SecLogin(
-            new ConsoleReader(),
+            new ConsoleUI(),
             random,
             QuestionBank.createDefault()
         );
@@ -50,6 +52,56 @@ public class Console {
     static RuntimeException exit(int exitCode) {
         System.exit(exitCode);
         return null;
+    }
+
+    static class ConsoleUI implements UserInterface {
+
+        private final ConsoleReader console;
+
+        ConsoleUI(ConsoleReader console) {
+            this.console = console;
+        }
+
+        ConsoleUI() {
+            this(newConsoleReader());
+        }
+
+        static ConsoleReader newConsoleReader() {
+            try {
+                return new ConsoleReader();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private String ask(String prompt, Character mask) {
+            try {
+                while (true) {
+                    String response = console.readLine(prompt, mask);
+                    if (!Strings.isNullOrEmpty(response)) return response;
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public String ask(String prompt) {
+            return ask(prompt, null);
+        }
+
+        public String askSecret(String prompt) {
+            return ask(prompt, ConsoleReader.NULL_MASK);
+        }
+
+        public void tell(String message) {
+            try {
+                console.println(message);
+                console.flush();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
 }

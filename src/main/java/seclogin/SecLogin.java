@@ -1,8 +1,5 @@
 package seclogin;
 
-import com.google.common.base.Strings;
-import scala.tools.jline.console.ConsoleReader;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
@@ -10,17 +7,17 @@ import java.util.Random;
 /** The entry point to SecLogin. */
 public class SecLogin {
 
-    private final ConsoleReader console;
+    private final UserInterface userInterface;
     private final Random random;
     private final QuestionBank questionBank;
     private final Authenticator authenticator;
     private final MeasurementParams[] measurementParams;
     private final HistoryFileParams historyFileParams;
 
-    public SecLogin(ConsoleReader console, Random random, QuestionBank questionBank) {
+    public SecLogin(UserInterface userInterface, Random random, QuestionBank questionBank) {
         int nrOfFeatures = questionBank.getQuestions().size();
         historyFileParams = new HistoryFileParams(2, nrOfFeatures);
-        this.console = console;
+        this.userInterface = userInterface;
         this.random = random;
         this.questionBank = questionBank;
         measurementParams = questionBank.measurementParams();
@@ -32,9 +29,8 @@ public class SecLogin {
     }
 
     public void prompt() throws IOException {
-        String user;
-        while (Strings.isNullOrEmpty(user = console.readLine("login: ")));
 
+        String user = userInterface.ask("login: ");
         String password = readPassword();
         double[] measurements = askQuestions();
 
@@ -44,17 +40,18 @@ public class SecLogin {
             userState = authenticator.authenticate(userState, password, measurements);
         }
 
-        if (userState != null) {
+        boolean loginCorrect = userState != null;
+
+        if (loginCorrect) {
             userState.write(userStateDir());
-            System.out.println("Login correct.");
-        } else {
-            System.err.println("Login incorrect.");
         }
-        System.out.println();
+
+        userInterface.tell(loginCorrect ? "Login success." : "Login failure.");
+        userInterface.tell("");
     }
 
     private String readPassword() throws IOException {
-        return console.readLine("password: ", ConsoleReader.NULL_MASK);
+        return userInterface.askSecret("password: ");
     }
 
     double[] askQuestions() throws IOException {
@@ -68,11 +65,11 @@ public class SecLogin {
 
     private double askQuestion(Question question) throws IOException {
         while (true) {
-            String answer = console.readLine(question.question() + " ");
+            String answer = userInterface.ask(question.question() + " ");
             try {
                 return Double.parseDouble(answer);
             } catch (NumberFormatException e) {
-                System.err.println("Answer must be numeric.");
+                userInterface.tell("Answer must be numeric.");
             }
         }
     }
