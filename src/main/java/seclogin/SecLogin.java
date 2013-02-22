@@ -1,40 +1,38 @@
 package seclogin;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Random;
 
 /** The entry point to SecLogin. */
 public class SecLogin {
 
     private final UserInterface userInterface;
+    private final UserStatePersistence userStatePersistence;
     private final Random random;
     private final QuestionBank questionBank;
     private final Authenticator authenticator;
     private final MeasurementParams[] measurementParams;
     private final HistoryFileParams historyFileParams;
 
-    public SecLogin(UserInterface userInterface, Random random, QuestionBank questionBank) {
+    public SecLogin(UserInterface userInterface, UserStatePersistence userStatePersistence,
+                    Random random, QuestionBank questionBank) {
+
         int nrOfFeatures = questionBank.getQuestions().size();
         historyFileParams = new HistoryFileParams(2, nrOfFeatures);
         this.userInterface = userInterface;
+        this.userStatePersistence = userStatePersistence;
         this.random = random;
         this.questionBank = questionBank;
         measurementParams = questionBank.measurementParams();
-        authenticator = new Authenticator(
-            random,
-            measurementParams,
-            historyFileParams
-        );
+        authenticator = new Authenticator(random, measurementParams, historyFileParams);
     }
 
-    public void prompt() throws IOException {
+    public void prompt() {
 
         String user = userInterface.ask("login: ");
         String password = readPassword();
         double[] measurements = askQuestions();
 
-        UserState userState = UserState.read(userStateDir(), user, measurementParams);
+        UserState userState = userStatePersistence.read(user, measurementParams);
 
         if (userState != null) {
             userState = authenticator.authenticate(userState, password, measurements);
@@ -43,18 +41,18 @@ public class SecLogin {
         boolean loginCorrect = userState != null;
 
         if (loginCorrect) {
-            userState.write(userStateDir());
+            userStatePersistence.write(userState);
         }
 
         userInterface.tell(loginCorrect ? "Login success." : "Login failure.");
         userInterface.tell("");
     }
 
-    private String readPassword() throws IOException {
+    private String readPassword() {
         return userInterface.askSecret("password: ");
     }
 
-    double[] askQuestions() throws IOException {
+    double[] askQuestions() {
         double[] measurements = new double[historyFileParams.nrOfFeatures()];
         int i = 0;
         for (Question question : questionBank) {
@@ -63,7 +61,7 @@ public class SecLogin {
         return measurements;
     }
 
-    private double askQuestion(Question question) throws IOException {
+    private double askQuestion(Question question) {
         while (true) {
             String answer = userInterface.ask(question.question() + " ");
             try {
@@ -74,12 +72,10 @@ public class SecLogin {
         }
     }
 
-    public void addUser(String user) throws IOException {
-        String password;
-        while ((password = readPassword()) == null || password.isEmpty());
-
+    public void addUser(String user) {
+        String password = readPassword();
         UserState userState = generateNewUserState(user, password);
-        userState.write(userStateDir());
+        userStatePersistence.write(userState);
     }
 
     private UserState generateNewUserState(String user, String password) {
@@ -88,15 +84,6 @@ public class SecLogin {
         HistoryFile.Encrypted historyFile =
             HistoryFile.emptyHistoryFile(user, historyFileParams).encrypt(tableAndHpwd.hpwd);
         return new UserState(user, tableAndHpwd.table, historyFile);
-    }
-
-    /** The directory in which to store user history files and instruction tables. */
-    private File userStateDir() {
-        File file = new File(".seclogin");
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        return file;
     }
 
 }

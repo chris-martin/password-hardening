@@ -34,6 +34,7 @@ public class Console {
         Random random = new SecureRandom();
         SecLogin secLogin = new SecLogin(
             new ConsoleUI(),
+            new UserStateFilesystemPersistence(),
             random,
             QuestionBank.createDefault()
         );
