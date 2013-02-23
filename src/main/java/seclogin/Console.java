@@ -2,6 +2,7 @@ package seclogin;
 
 import com.google.common.base.Strings;
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -23,6 +24,9 @@ public class Console {
         parser.addArgument("-a", "--add")
             .help("Add specified user");
 
+        parser.addArgument("-v", "--verbose")
+                .action(Arguments.storeTrue());
+
         Namespace ns;
         try {
             ns = parser.parseArgs(args);
@@ -30,6 +34,8 @@ public class Console {
             parser.handleError(e);
             throw exit(1);
         }
+
+        boolean verbose = ns.getBoolean("verbose");
 
         Random random = new SecureRandom();
         SecLogin secLogin = new SecLogin(
@@ -39,14 +45,23 @@ public class Console {
             QuestionBank.createDefault()
         );
 
-        String usernameToAdd = ns.getString("add");
-        if (usernameToAdd != null) {
-            secLogin.addUser(usernameToAdd);
-            System.out.printf("Added user %s.\n", usernameToAdd);
-            throw exit(0);
-        }
+        try {
+            String usernameToAdd = ns.getString("add");
+            if (usernameToAdd != null) {
+                secLogin.addUser(usernameToAdd);
+                System.out.printf("Added user %s.\n", usernameToAdd);
+                throw exit(0);
+            }
 
-        secLogin.prompt();
+            secLogin.prompt();
+        } catch (RuntimeException e) {
+            if (verbose) {
+                e.printStackTrace();
+            } else {
+                System.err.println(e.getMessage());
+            }
+            throw exit(1);
+        }
 
     }
 

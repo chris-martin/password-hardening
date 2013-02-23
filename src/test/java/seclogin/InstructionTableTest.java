@@ -6,7 +6,6 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
 import java.security.SecureRandom;
 
 public class InstructionTableTest {
@@ -28,7 +27,7 @@ public class InstructionTableTest {
     @Test
     public void testWriteAndRead() throws Exception {
         InstructionTable written =
-            InstructionTable.generate("asdf", measurementParams, null, random).table;
+            InstructionTable.generate(new Password("asdf"), measurementParams, null, random).table;
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         written.write(out);
@@ -40,7 +39,7 @@ public class InstructionTableTest {
 
     @Test
     public void testInterpolateHpwd() throws Exception {
-        String pwd = "asdf";
+        Password pwd = new Password("asdf");
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
             InstructionTable.generate(pwd, measurementParams, null, random);
 
@@ -49,7 +48,11 @@ public class InstructionTableTest {
             measurements[i] = measurementParams[i].responseMean() + random.nextInt(6) - 3;
         }
 
-        BigInteger hpwd = tableAndHpwd.table.interpolateHpwd(pwd, measurements);
+        HardenedPassword hpwd = tableAndHpwd.table.interpolateHpwd(pwd, measurements, measurementParams);
         Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
+
+        Password wrongPwd = new Password("asdg");
+        HardenedPassword wrongHpwd = tableAndHpwd.table.interpolateHpwd(wrongPwd, measurements, measurementParams);
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
     }
 }

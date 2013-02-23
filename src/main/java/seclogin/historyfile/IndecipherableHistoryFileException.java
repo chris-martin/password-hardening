@@ -1,6 +1,6 @@
-package seclogin;
+package seclogin.historyfile;
 
-class IndecipherableHistoryFileException extends Exception {
+public class IndecipherableHistoryFileException extends Exception {
 
     public IndecipherableHistoryFileException() {
         super();

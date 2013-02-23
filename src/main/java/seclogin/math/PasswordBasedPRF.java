@@ -1,6 +1,8 @@
 package seclogin.math;
 
-import seclogin.Crypto;
+import seclogin.Password;
+import seclogin.crypto.Aes128Cbc;
+import seclogin.crypto.Cipher;
 
 import javax.crypto.SecretKey;
 import java.math.BigInteger;
@@ -13,6 +15,8 @@ import java.math.BigInteger;
  */
 public class PasswordBasedPRF {
 
+    private static final Cipher cipher = new Aes128Cbc();
+
     private final SecretKey key;
     private final Mod q;
 
@@ -21,11 +25,11 @@ public class PasswordBasedPRF {
         this.q = q;
     }
 
-    public static PasswordBasedPRF forSaltedPassword(byte[] salt, String password, Mod q) {
-        return new PasswordBasedPRF(Crypto.deriveAesKey(salt, password.toCharArray()), q);
+    public static PasswordBasedPRF forSaltedPassword(byte[] salt, Password password, Mod q) {
+        return new PasswordBasedPRF(cipher.deriveKey(salt, password), q);
     }
 
     public BigInteger of(int input) {
-        return new BigInteger(Crypto.aesEncrypt(key, BigInteger.valueOf(input).toByteArray())).mod(q.q);
+        return new BigInteger(cipher.encrypt(key, BigInteger.valueOf(input).toByteArray())).mod(q.q);
     }
 }

@@ -2,7 +2,7 @@ package seclogin;
 
 public interface UserStatePersistence {
 
-    UserState read(String user, MeasurementParams[] measurementParams);
+    UserState read(User user, MeasurementParams[] measurementParams);
 
     void write(UserState userState);
 

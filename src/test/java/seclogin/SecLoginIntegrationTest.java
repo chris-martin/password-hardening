@@ -4,10 +4,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,7 +16,7 @@ public class SecLoginIntegrationTest {
 
     UserInterface userInterface;
     UserStatePersistence userStatePersistence;
-    SecureRandom random;
+    Random random;
 
     @Before
     public void setUp() throws Exception {
@@ -25,9 +25,9 @@ public class SecLoginIntegrationTest {
 
         userStatePersistence = new UserStatePersistence() {
 
-            final Map<String, UserState> map = new HashMap<String, UserState>();
+            final Map<User, UserState> map = new HashMap<User, UserState>();
 
-            public UserState read(String user, MeasurementParams[] measurementParams) {
+            public UserState read(User user, MeasurementParams[] measurementParams) {
                 return map.get(user);
             }
 
@@ -37,8 +37,7 @@ public class SecLoginIntegrationTest {
 
         };
 
-        random = SecureRandom.getInstance("SHA1PRNG");
-        random.setSeed(new byte[0]);
+        random = TestRandom.random();
 
     }
 

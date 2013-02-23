@@ -3,7 +3,14 @@ package seclogin;
 import com.google.common.io.BaseEncoding;
 import seclogin.io.ZqInputStream;
 import seclogin.io.ZqOutputStream;
-import seclogin.math.*;
+import seclogin.math.Interpolation;
+import seclogin.math.Mod;
+import seclogin.math.PasswordBasedPRF;
+import seclogin.math.Point;
+import seclogin.math.Polynomial;
+import seclogin.math.RandomBigIntModQ;
+import seclogin.math.RandomPolynomial;
+import seclogin.math.SparsePRP;
 
 import javax.annotation.Nullable;
 import java.io.BufferedInputStream;
@@ -33,31 +40,29 @@ public class InstructionTable {
     private final byte[] r;
     private final Entry[] table;
 
-    private final MeasurementParams[] measurementParams;
-
-    private InstructionTable(Mod q, byte[] r, Entry[] table, MeasurementParams[] measurementParams) {
+    private InstructionTable(Mod q, byte[] r, Entry[] table) {
         checkArgument(r.length == R_LEN_IN_BYTES);
         this.q = checkNotNull(q);
         this.r = checkNotNull(r);
         this.table = checkNotNull(table);
-        this.measurementParams = checkNotNull(measurementParams);
     }
 
     /**
      * Interpolates the hardened password using the (x,y) pairs recovered from the table
      * using the given regular password and measurements.
      */
-    public BigInteger interpolateHpwd(String pwd, double[] measurements) {
-        List<Point> xys = points(pwd, measurements);
-        return new Interpolation(xys, q).yIntercept();
+    public HardenedPassword interpolateHpwd(Password pwd, double[] measurements, MeasurementParams[] measurementParams) {
+        List<Point> xys = points(pwd, measurements, measurementParams);
+        return new HardenedPassword(new Interpolation(xys, q).yIntercept());
     }
 
     /**
      * Selects the correct (x,y) pair stored in the table for each feature using the given
      * measurements and `decrypting` the y value using the given regular password.
      */
-    List<Point> points(String pwd, double[] measurements) {
+    List<Point> points(Password pwd, double[] measurements, MeasurementParams[] measurementParams) {
         checkArgument(measurements.length == table.length);
+        checkNotNull(measurementParams);
 
         PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, q);
         SparsePRP p = new SparsePRP(r, q);
@@ -86,11 +91,12 @@ public class InstructionTable {
      * the user. If no measurement stats are given, the user is not yet
      * distinguished by any features.
      */
-    public static InstructionTableAndHardenedPassword generate(String pwd,
+    public static InstructionTableAndHardenedPassword generate(Password pwd,
                                                                MeasurementParams[] measurementParams,
                                                                @Nullable MeasurementStats[] measurementStats,
                                                                Random random) {
         checkNotNull(measurementParams);
+        checkArgument(measurementStats == null || measurementStats.length == measurementParams.length);
 
         Mod q = new Mod(BigInteger.probablePrime(SecurityParameters.Q_LEN, random));
         RandomBigIntModQ randomBigIntModQ = new RandomBigIntModQ(random, q);
@@ -98,7 +104,7 @@ public class InstructionTable {
         Polynomial f = new RandomPolynomial(randomBigIntModQ)
             .nextPolynomial(measurementParams.length);
 
-        BigInteger hpwd = f.apply(BigInteger.ZERO);
+        HardenedPassword hpwd = new HardenedPassword(f.apply(BigInteger.ZERO));
 
         byte[] r = new byte[R_LEN_IN_BYTES];
         random.nextBytes(r);
@@ -133,15 +139,15 @@ public class InstructionTable {
             table[i] = new Entry(alpha, beta);
         }
 
-        return new InstructionTableAndHardenedPassword(new InstructionTable(q, r, table, measurementParams), hpwd);
+        return new InstructionTableAndHardenedPassword(new InstructionTable(q, r, table), hpwd);
     }
 
     /** An instruction table and its corresponding hardened password. */
     public static final class InstructionTableAndHardenedPassword {
         public final InstructionTable table;
-        public final BigInteger hpwd;
+        public final HardenedPassword hpwd;
 
-        public InstructionTableAndHardenedPassword(InstructionTable table, BigInteger hpwd) {
+        public InstructionTableAndHardenedPassword(InstructionTable table, HardenedPassword hpwd) {
             this.table = table;
             this.hpwd = hpwd;
         }
@@ -216,7 +222,7 @@ public class InstructionTable {
                 }
                 entries[i] = entry;
             }
-            return new InstructionTable(q, r, entries, measurementParams);
+            return new InstructionTable(q, r, entries);
         } finally {
             in.close();
         }
@@ -251,7 +257,7 @@ public class InstructionTable {
     public int hashCode() {
         int result = q.hashCode();
         result = 31 * result + Arrays.hashCode(r);
-        result = 31 * result + table.hashCode();
+        result = 31 * result + Arrays.hashCode(table);
         return result;
     }
 }

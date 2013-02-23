@@ -1,6 +1,6 @@
 package seclogin;
 
-class MeasurementStats {
+public class MeasurementStats {
 
     private final double mean;
 

@@ -1,14 +1,26 @@
 package seclogin;
 
-import java.io.*;
+import seclogin.historyfile.EncryptedHistoryFile;
+import seclogin.historyfile.HistoryFileIo;
+
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class UserStateFilesystemPersistence implements UserStatePersistence {
+
+    private final HistoryFileIo historyFileIo = new HistoryFileIo();
 
     /** The directory in which to store user history files and instruction tables. */
     private File userStateDir() {
         File file = new File(".seclogin");
         if (!file.exists()) {
-            file.mkdirs();
+            if (!file.mkdirs()) {
+                throw new RuntimeException("Could not create directory " + file.getAbsolutePath());
+            }
         }
         return file;
     }
@@ -21,11 +33,10 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
     private void writeHistoryFile(UserState userState) {
         try {
             FileOutputStream out = new FileOutputStream(historyFile(userState.user));
-            userState.historyFile.write(out);
+            historyFileIo.write(userState.encryptedHistoryFile, out);
             out.close();
         } catch (IOException e) {
-            System.err.println("Could not write history file.");
-            System.exit(1);
+            throw new RuntimeException("Could not write history file.", e);
         }
     }
 
@@ -35,45 +46,41 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
             userState.instructionTable.write(out);
             out.close();
         } catch (IOException e) {
-            System.err.println("Could not write instruction table.");
-            System.exit(1);
+            throw new RuntimeException("Could not write instruction table.", e);
         }
     }
 
-    public UserState read(String user, MeasurementParams[] measurementParams) {
+    @Nullable
+    public UserState read(User user, MeasurementParams[] measurementParams) {
         InstructionTable instructionTable;
         try {
             FileInputStream in = new FileInputStream(instructionTableFile(user));
             instructionTable = InstructionTable.read(in, measurementParams);
             in.close();
         } catch (FileNotFoundException e) {
-            return null;
+            return null; // user doesn't exist
         } catch (IOException e) {
-            System.err.println("Could not read instruction table.");
-            System.exit(1);
-            return null;
+            throw new RuntimeException("Could not read instruction table.");
         }
 
-        HistoryFile.Encrypted encryptedHistoryFile;
+        EncryptedHistoryFile encryptedHistoryFile;
         try {
             FileInputStream in = new FileInputStream(historyFile(user));
-            encryptedHistoryFile = HistoryFile.read(in);
+            encryptedHistoryFile = historyFileIo.read(in);
             in.close();
         } catch (IOException e) {
-            System.err.println("Could not read instruction table.");
-            System.exit(1);
-            return null;
+            throw new RuntimeException("Could not read instruction table.", e);
         }
 
         return new UserState(user, instructionTable, encryptedHistoryFile);
     }
 
-    private File instructionTableFile(String user) {
-        return new File(userStateDir(), "instruction-table-" + user);
+    private File instructionTableFile(User user) {
+        return new File(userStateDir(), "instruction-table-" + user.user);
     }
 
-    private File historyFile(String user) {
-        return new File(userStateDir(), "history-file-" + user);
+    private File historyFile(User user) {
+        return new File(userStateDir(), "history-file-" + user.user);
     }
 
 }

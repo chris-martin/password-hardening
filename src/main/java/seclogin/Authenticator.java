@@ -1,6 +1,11 @@
 package seclogin;
 
-import java.math.BigInteger;
+import seclogin.historyfile.EncryptedHistoryFile;
+import seclogin.historyfile.HistoryFile;
+import seclogin.historyfile.HistoryFileCipher;
+import seclogin.historyfile.IndecipherableHistoryFileException;
+
+import javax.annotation.Nullable;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -10,47 +15,39 @@ public class Authenticator {
     
     private final Random random;
     private final MeasurementParams[] measurementParams;
-    private final HistoryFileParams historyFileParams;
+    private final HistoryFileCipher historyFileCipher;
 
-    public Authenticator(Random random, MeasurementParams[] measurementParams, HistoryFileParams historyFileParams) {
+    public Authenticator(Random random, MeasurementParams[] measurementParams, HistoryFileCipher historyFileCipher) {
         this.random = random;
         this.measurementParams = measurementParams;
-        this.historyFileParams = historyFileParams;
+        this.historyFileCipher = historyFileCipher;
     }
 
     /**
      * Authenticates the user by recovering their hardened password from their instruction table
      * and history file using the given regular password and measurements (responses to questions).
       */
-    public UserState authenticate(UserState userState, String password, double[] measurements) {
+    public UserState authenticate(UserState userState, Password password, double[] measurements) {
         checkState(measurements.length == measurementParams.length);
         
-        BigInteger hpwd = userState.instructionTable.interpolateHpwd(password, measurements);
+        HardenedPassword hpwd = userState.instructionTable.interpolateHpwd(password, measurements, measurementParams);
         HistoryFile historyFile;
         try {
-            historyFile = decryptHistoryFile(userState, hpwd);
+            historyFile = historyFileCipher.decrypt(userState.encryptedHistoryFile, hpwd, userState.user);
         } catch (IndecipherableHistoryFileException e) {
             return null;
         }
 
+        // add the new measurements to the history file
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
+        // calculate the measurement statistics for this user if the history file is full
+        @Nullable MeasurementStats[] measurementStats = historyFile.calculateStats();
+
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(password, measurementParams, historyFile.calculateStats(), random);
+            InstructionTable.generate(password, measurementParams, measurementStats, random);
 
-        return new UserState(userState.user, tableAndHpwd.table, historyFile.encrypt(tableAndHpwd.hpwd));
-    }
-
-    /**
-     * Decrypts the user's history file using the given hardened password. Returns null if
-     * the password is incorrect or if the decrypted history file is not valid for the user.
-     */
-    private HistoryFile decryptHistoryFile(UserState userState, BigInteger hpwd)
-            throws IndecipherableHistoryFileException {
-        HistoryFile historyFile = userState.historyFile.decrypt(hpwd, historyFileParams);
-        if (!historyFile.userHashEquals(userState.user)) {
-            throw new IndecipherableHistoryFileException();
-        }
-        return historyFile;
+        EncryptedHistoryFile encryptedHistoryFile = historyFileCipher.encrypt(historyFile, tableAndHpwd.hpwd);
+        return new UserState(userState.user, tableAndHpwd.table, encryptedHistoryFile);
     }
 }
