@@ -105,7 +105,7 @@ public class HistoryFile {
     @Override
     public String toString() {
         return "HistoryFile{" +
-                "userHash=" + BaseEncoding.base16().encode(userHash) +
+                "userHash=" + BaseEncoding.base16().lowerCase().encode(userHash) +
                 ", nrOfMeasurements=" + nrOfMeasurements +
                 ", measurements=" + Arrays.deepToString(measurements) +
                 '}';
