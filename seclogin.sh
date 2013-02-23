@@ -4,7 +4,7 @@ JAR=target/seclogin.jar
 
 if [ ! -e "$JAR" ]
 then
-  mvn install
+  sbt assembly
 fi
 
 java -jar "$JAR" "$@"
