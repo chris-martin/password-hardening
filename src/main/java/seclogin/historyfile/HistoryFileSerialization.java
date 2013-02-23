@@ -3,6 +3,7 @@ package seclogin.historyfile;
 import java.nio.ByteBuffer;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -15,6 +16,8 @@ class HistoryFileSerialization {
 
     /** Serializes this history file (unencrypted). */
     byte[] toByteArray(HistoryFile historyFile) {
+        checkNotNull(historyFile);
+
         byte[] plaintext = new byte[sizeInBytes(historyFile)];
 
         int offset = 0;

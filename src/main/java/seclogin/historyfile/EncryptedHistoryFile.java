@@ -2,13 +2,15 @@ package seclogin.historyfile;
 
 import java.util.Arrays;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /** An encrypted history file. Must be decrypted with the corresponding hardened password. */
 public class EncryptedHistoryFile {
 
     final byte[] ciphertext;
 
     EncryptedHistoryFile(byte[] ciphertext) {
-        this.ciphertext = ciphertext;
+        this.ciphertext = checkNotNull(ciphertext);
     }
 
     @Override

@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -26,8 +27,13 @@ public class HistoryFile {
     final double[][] measurements;
 
     HistoryFile(byte[] userHash, int nrOfMeasurements, double[][] measurements) {
+        checkNotNull(userHash);
+        checkArgument(userHash.length == USER_HASH_FN.bits()/Byte.SIZE);
+        checkNotNull(nrOfMeasurements);
+        checkNotNull(measurements);
         checkArgument(measurements.length > 0);
         checkArgument(nrOfMeasurements <= measurements.length);
+
         this.userHash = userHash;
         this.nrOfMeasurements = nrOfMeasurements;
         this.measurements = measurements;
@@ -35,7 +41,9 @@ public class HistoryFile {
 
     /** Returns an empty history file. */
     public static HistoryFile emptyHistoryFile(User user, HistoryFileParams params) {
+        checkNotNull(user);
         checkArgument(params.maxNrOfMeasurements > 0);
+
         byte[] userHash = USER_HASH_FN.hashString(user.user).asBytes();
         return new HistoryFile(userHash, 0,
             new double[params.maxNrOfMeasurements][params.nrOfFeatures]);
@@ -43,6 +51,8 @@ public class HistoryFile {
 
     /** Returns whether this history file's user hash matches that of the given user. */
     boolean verifyUserHash(User user) {
+        checkNotNull(user);
+
         return Arrays.equals(userHash, USER_HASH_FN.hashString(user.user).asBytes());
     }
 
@@ -51,6 +61,9 @@ public class HistoryFile {
      * and excludes the least recent measurements if the file is full.
      */
     public HistoryFile withMostRecentMeasurements(double[] mostRecentMeasurements) {
+        checkNotNull(mostRecentMeasurements);
+        checkArgument(mostRecentMeasurements.length == measurements[0].length);
+
         double[][] shiftedMeasurements = new double[measurements.length][];
         shiftedMeasurements[0] = mostRecentMeasurements;
         System.arraycopy(measurements, 0, shiftedMeasurements, 1, shiftedMeasurements.length - 1);
@@ -59,12 +72,12 @@ public class HistoryFile {
 
     /**
      * Returns statistics of the measurements in this history file, or null if the file is not yet full, i.e.,
-     * if the user has not successfully logged at least as many times as measurements can fit in this history file.
+     * if the user has not successfully logged in at least as many times as measurements can fit in this history file.
      */
     @Nullable
     public MeasurementStats[] calculateStats() {
         if (nrOfMeasurements != measurements.length) {
-            return null;
+            return null; // the history file isn't full yet
         }
 
         int nrOfFeatures = measurements[0].length;

@@ -8,6 +8,8 @@ import seclogin.crypto.IndecipherableException;
 
 import javax.crypto.SecretKey;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * History file cipher. Encrypts/decrypts history files.
  */
@@ -23,11 +25,14 @@ public class HistoryFileCipher {
 
     /** Constructs a {@link HistoryFileCipher} using the given block cipher. */
     public HistoryFileCipher(BlockCipher cipher) {
-        this.cipher = cipher;
+        this.cipher = checkNotNull(cipher);
     }
 
     /** Encrypts this history file using the given hardened password. */
     public EncryptedHistoryFile encrypt(HistoryFile historyFile, HardenedPassword hpwd) {
+        checkNotNull(historyFile);
+        checkNotNull(hpwd);
+
         byte[] plaintext = serialization.toByteArray(historyFile);
         SecretKey key = cipher.deriveKey(hpwd);
         byte[] ciphertext = cipher.encrypt(key, plaintext);
@@ -37,10 +42,14 @@ public class HistoryFileCipher {
     /**
      * Decrypts the given encrypted history file for the given user with the given hardened password.
      *
-     * @throws IndecipherableHistoryFileException if either the password or user are incorrect.
+     * @throws IndecipherableHistoryFileException if the password and/or user are incorrect
      */
     public HistoryFile decrypt(EncryptedHistoryFile encryptedHistoryFile, HardenedPassword hpwd, User user)
             throws IndecipherableHistoryFileException {
+        checkNotNull(encryptedHistoryFile);
+        checkNotNull(hpwd);
+        checkNotNull(user);
+
         SecretKey key = cipher.deriveKey(hpwd);
         byte[] plaintext;
         try {
