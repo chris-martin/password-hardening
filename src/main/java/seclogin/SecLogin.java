@@ -6,6 +6,7 @@ import seclogin.historyfile.EncryptedHistoryFile;
 import seclogin.historyfile.HistoryFile;
 import seclogin.historyfile.HistoryFileCipher;
 import seclogin.historyfile.HistoryFileParams;
+import seclogin.instructiontable.InstructionTable;
 
 import java.util.Random;
 
@@ -44,7 +45,7 @@ public class SecLogin {
         Password password = readPassword();
         double[] measurements = askQuestions();
 
-        UserState userState = userStatePersistence.read(user, measurementParams);
+        UserState userState = userStatePersistence.read(user);
 
         if (userState != null) {
             userState = authenticator.authenticate(userState, password, measurements);

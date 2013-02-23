@@ -2,6 +2,8 @@ package seclogin;
 
 import seclogin.historyfile.EncryptedHistoryFile;
 import seclogin.historyfile.HistoryFileIo;
+import seclogin.instructiontable.InstructionTable;
+import seclogin.instructiontable.InstructionTableIo;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -13,6 +15,7 @@ import java.io.IOException;
 public class UserStateFilesystemPersistence implements UserStatePersistence {
 
     private final HistoryFileIo historyFileIo = new HistoryFileIo();
+    private final InstructionTableIo instructionTableIo = new InstructionTableIo();
 
     /** The directory in which to store user history files and instruction tables. */
     private File userStateDir() {
@@ -34,7 +37,6 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
         try {
             FileOutputStream out = new FileOutputStream(historyFile(userState.user));
             historyFileIo.write(userState.encryptedHistoryFile, out);
-            out.close();
         } catch (IOException e) {
             throw new RuntimeException("Could not write history file.", e);
         }
@@ -43,20 +45,18 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
     private void writeInstructionTable(UserState userState) {
         try {
             FileOutputStream out = new FileOutputStream(instructionTableFile(userState.user));
-            userState.instructionTable.write(out);
-            out.close();
+            instructionTableIo.write(userState.instructionTable, out);
         } catch (IOException e) {
             throw new RuntimeException("Could not write instruction table.", e);
         }
     }
 
     @Nullable
-    public UserState read(User user, MeasurementParams[] measurementParams) {
+    public UserState read(User user) {
         InstructionTable instructionTable;
         try {
             FileInputStream in = new FileInputStream(instructionTableFile(user));
-            instructionTable = InstructionTable.read(in, measurementParams);
-            in.close();
+            instructionTable = instructionTableIo.read(in);
         } catch (FileNotFoundException e) {
             return null; // user doesn't exist
         } catch (IOException e) {
@@ -67,7 +67,6 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
         try {
             FileInputStream in = new FileInputStream(historyFile(user));
             encryptedHistoryFile = historyFileIo.read(in);
-            in.close();
         } catch (IOException e) {
             throw new RuntimeException("Could not read instruction table.", e);
         }

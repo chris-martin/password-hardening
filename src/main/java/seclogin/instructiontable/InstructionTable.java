@@ -1,8 +1,11 @@
-package seclogin;
+package seclogin.instructiontable;
 
 import com.google.common.io.BaseEncoding;
-import seclogin.io.ZqInputStream;
-import seclogin.io.ZqOutputStream;
+import seclogin.HardenedPassword;
+import seclogin.MeasurementParams;
+import seclogin.MeasurementStats;
+import seclogin.Password;
+import seclogin.SecurityParameters;
 import seclogin.math.Interpolation;
 import seclogin.math.Mod;
 import seclogin.math.PasswordBasedPRF;
@@ -13,11 +16,6 @@ import seclogin.math.RandomPolynomial;
 import seclogin.math.SparsePRP;
 
 import javax.annotation.Nullable;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,11 +34,11 @@ public class InstructionTable {
 
     public static final int R_LEN_IN_BYTES = SecurityParameters.R_LEN / Byte.SIZE;
 
-    private final Mod q;
-    private final byte[] r;
-    private final Entry[] table;
+    final Mod q;
+    final byte[] r;
+    final Entry[] table;
 
-    private InstructionTable(Mod q, byte[] r, Entry[] table) {
+    InstructionTable(Mod q, byte[] r, Entry[] table) {
         checkArgument(r.length == R_LEN_IN_BYTES);
         this.q = checkNotNull(q);
         this.r = checkNotNull(r);
@@ -51,7 +49,9 @@ public class InstructionTable {
      * Interpolates the hardened password using the (x,y) pairs recovered from the table
      * using the given regular password and measurements.
      */
-    public HardenedPassword interpolateHpwd(Password pwd, double[] measurements, MeasurementParams[] measurementParams) {
+    public HardenedPassword interpolateHpwd(Password pwd,
+                                            double[] measurements,
+                                            MeasurementParams[] measurementParams) {
         List<Point> xys = points(pwd, measurements, measurementParams);
         return new HardenedPassword(new Interpolation(xys, q).yIntercept());
     }
@@ -101,8 +101,7 @@ public class InstructionTable {
         Mod q = new Mod(BigInteger.probablePrime(SecurityParameters.Q_LEN, random));
         RandomBigIntModQ randomBigIntModQ = new RandomBigIntModQ(random, q);
 
-        Polynomial f = new RandomPolynomial(randomBigIntModQ)
-            .nextPolynomial(measurementParams.length);
+        Polynomial f = new RandomPolynomial(randomBigIntModQ).nextPolynomial(measurementParams.length);
 
         HardenedPassword hpwd = new HardenedPassword(f.apply(BigInteger.ZERO));
 
@@ -154,27 +153,13 @@ public class InstructionTable {
     }
 
     /** An entry in the instruction table. */
-    private static class Entry {
+    static class Entry {
         public final BigInteger alpha;
         public final BigInteger beta;
 
         public Entry(BigInteger alpha, BigInteger beta) {
             this.alpha = alpha;
             this.beta = beta;
-        }
-
-        private void write(ZqOutputStream out) throws IOException {
-            out.writeBigInteger(alpha);
-            out.writeBigInteger(beta);
-        }
-
-        private static Entry read(ZqInputStream in) throws IOException {
-            BigInteger alpha = in.readBigInteger();
-            if (alpha == null) {
-                return null;
-            }
-            BigInteger beta = in.readBigInteger();
-            return new Entry(alpha, beta);
         }
 
         @Override
@@ -192,39 +177,6 @@ public class InstructionTable {
             int result = alpha.hashCode();
             result = 31 * result + beta.hashCode();
             return result;
-        }
-    }
-
-    /** Writes this instruction table to the given stream. */
-    public void write(OutputStream outputStream) throws IOException {
-        ZqOutputStream out = new ZqOutputStream(new BufferedOutputStream(outputStream));
-        out.writeBigInteger(q.q);
-        out.write(r);
-        for (Entry entry : table) {
-            entry.write(out);
-        }
-        out.flush();
-    }
-
-    /** Reads the instruction table supplied by the given stream. */
-    public static InstructionTable read(InputStream inputStream, MeasurementParams[] measurementParams) throws IOException {
-        ZqInputStream in = new ZqInputStream(new BufferedInputStream(inputStream));
-        try {
-            Mod q = new Mod(in.readBigInteger());
-            byte[] r = new byte[R_LEN_IN_BYTES];
-            in.read(r);
-
-            Entry[] entries = new Entry[measurementParams.length];
-            for (int i = 0; ; i++) {
-                Entry entry = Entry.read(in);
-                if (entry == null) {
-                    break;
-                }
-                entries[i] = entry;
-            }
-            return new InstructionTable(q, r, entries);
-        } finally {
-            in.close();
         }
     }
 

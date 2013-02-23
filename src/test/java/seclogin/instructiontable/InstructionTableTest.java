@@ -1,23 +1,26 @@
-package seclogin;
+package seclogin.instructiontable;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import seclogin.HardenedPassword;
+import seclogin.MeasurementParams;
+import seclogin.Password;
+import seclogin.TestRandom;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.security.SecureRandom;
+import java.util.Random;
 
 public class InstructionTableTest {
 
-    private SecureRandom random;
+    private Random random;
 
     private MeasurementParams[] measurementParams;
 
     @Before
     public void setUp() throws Exception {
-        random = SecureRandom.getInstance("SHA1PRNG");
-        random.setSeed(new byte[0]);
+        random = TestRandom.random();
         measurementParams = new MeasurementParams[3];
         for (int i = 0; i < measurementParams.length; i++) {
             measurementParams[i] = new MeasurementParams(random.nextInt(20), 1.0);
@@ -29,10 +32,12 @@ public class InstructionTableTest {
         InstructionTable written =
             InstructionTable.generate(new Password("asdf"), measurementParams, null, random).table;
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        written.write(out);
+        InstructionTableIo io = new InstructionTableIo();
 
-        InstructionTable read = InstructionTable.read(new ByteArrayInputStream(out.toByteArray()), measurementParams);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        io.write(written, out);
+
+        InstructionTable read = io.read(new ByteArrayInputStream(out.toByteArray()));
 
         Assert.assertEquals(written, read);
     }

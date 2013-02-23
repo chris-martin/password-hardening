@@ -27,7 +27,7 @@ public class SecLoginIntegrationTest {
 
             final Map<User, UserState> map = new HashMap<User, UserState>();
 
-            public UserState read(User user, MeasurementParams[] measurementParams) {
+            public UserState read(User user) {
                 return map.get(user);
             }
 

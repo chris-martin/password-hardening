@@ -1,6 +1,7 @@
 package seclogin;
 
 import seclogin.historyfile.EncryptedHistoryFile;
+import seclogin.instructiontable.InstructionTable;
 
 /** A user's instruction table and encrypted history file. */
 public class UserState {

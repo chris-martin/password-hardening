@@ -16,9 +16,12 @@ public class HistoryFileIo {
     /** Writes the given encrypted history file to the given stream. Closes the stream when done. */
     public void write(EncryptedHistoryFile encryptedHistoryFile, OutputStream outputStream) throws IOException {
         BufferedOutputStream out = new BufferedOutputStream(outputStream);
-        out.write(encryptedHistoryFile.ciphertext);
-        out.flush();
-        out.close();
+        try {
+            out.write(encryptedHistoryFile.ciphertext);
+            out.flush();
+        } finally {
+            out.close();
+        }
     }
 
     /** Reads the encrypted history file supplied by the given stream. Closes the stream when done. */

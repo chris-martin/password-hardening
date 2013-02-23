@@ -1,6 +1,6 @@
 package seclogin;
 
-class MeasurementParams {
+public class MeasurementParams {
 
     private final double responseMean;
 
@@ -10,7 +10,7 @@ class MeasurementParams {
      * @param responseMean response mean
      * @param stDevMultiplier standard deviation multiplier
      */
-    MeasurementParams(double responseMean, double stDevMultiplier) {
+    public MeasurementParams(double responseMean, double stDevMultiplier) {
         this.responseMean = responseMean;
         this.stDevMultiplier = stDevMultiplier;
     }

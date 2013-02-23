@@ -1,8 +1,12 @@
 package seclogin;
 
+import javax.annotation.Nullable;
+
 public interface UserStatePersistence {
 
-    UserState read(User user, MeasurementParams[] measurementParams);
+    /** Returns the user state for the given user, or null if no state exists for the user. */
+    @Nullable
+    UserState read(User user);
 
     void write(UserState userState);
 

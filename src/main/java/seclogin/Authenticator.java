@@ -4,6 +4,7 @@ import seclogin.historyfile.EncryptedHistoryFile;
 import seclogin.historyfile.HistoryFile;
 import seclogin.historyfile.HistoryFileCipher;
 import seclogin.historyfile.IndecipherableHistoryFileException;
+import seclogin.instructiontable.InstructionTable;
 
 import javax.annotation.Nullable;
 import java.util.Random;
