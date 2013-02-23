@@ -1,7 +1,7 @@
 package seclogin;
 
 import seclogin.crypto.Aes128Cbc;
-import seclogin.crypto.Cipher;
+import seclogin.crypto.BlockCipher;
 import seclogin.historyfile.EncryptedHistoryFile;
 import seclogin.historyfile.HistoryFile;
 import seclogin.historyfile.HistoryFileCipher;
@@ -34,7 +34,7 @@ public class SecLogin {
         int historyFileSize = 2;
         historyFileParams = new HistoryFileParams(historyFileSize, nrOfFeatures);
 
-        Cipher cipher = new Aes128Cbc();
+        BlockCipher cipher = new Aes128Cbc();
         historyFileCipher = new HistoryFileCipher(cipher);
         authenticator = new Authenticator(random, measurementParams, historyFileCipher);
     }

@@ -2,7 +2,7 @@ package seclogin.math;
 
 import seclogin.Password;
 import seclogin.crypto.Aes128Cbc;
-import seclogin.crypto.Cipher;
+import seclogin.crypto.BlockCipher;
 
 import javax.crypto.SecretKey;
 import java.math.BigInteger;
@@ -15,7 +15,7 @@ import java.math.BigInteger;
  */
 public class PasswordBasedPRF {
 
-    private static final Cipher cipher = new Aes128Cbc();
+    private static final BlockCipher cipher = new Aes128Cbc();
 
     private final SecretKey key;
     private final Mod q;

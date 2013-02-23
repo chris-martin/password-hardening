@@ -3,7 +3,8 @@ package seclogin.historyfile;
 import seclogin.HardenedPassword;
 import seclogin.User;
 import seclogin.crypto.Aes128Cbc;
-import seclogin.crypto.Cipher;
+import seclogin.crypto.BlockCipher;
+import seclogin.crypto.IndecipherableException;
 
 import javax.crypto.SecretKey;
 
@@ -12,14 +13,16 @@ import javax.crypto.SecretKey;
  */
 public class HistoryFileCipher {
 
-    private final Cipher cipher;
+    private final BlockCipher cipher;
     private final HistoryFileSerialization serialization = new HistoryFileSerialization();
 
+    /** Constructs a {@link HistoryFileCipher} using {@link Aes128Cbc} as the block cipher. */
     public HistoryFileCipher() {
         this(new Aes128Cbc());
     }
 
-    public HistoryFileCipher(Cipher cipher) {
+    /** Constructs a {@link HistoryFileCipher} using the given block cipher. */
+    public HistoryFileCipher(BlockCipher cipher) {
         this.cipher = cipher;
     }
 
@@ -42,12 +45,12 @@ public class HistoryFileCipher {
         byte[] plaintext;
         try {
             plaintext = cipher.decrypt(key, encryptedHistoryFile.ciphertext);
-        } catch (Exception e) {
-            throw new IndecipherableHistoryFileException(e);
+        } catch (IndecipherableException e) {
+            throw new IndecipherableHistoryFileException(e); // the hardened password is incorrect
         }
         HistoryFile historyFile = serialization.fromByteArray(plaintext);
         if (!historyFile.verifyUserHash(user)) {
-            throw new IndecipherableHistoryFileException();
+            throw new IndecipherableHistoryFileException(); // the hardened password and/or user are incorrect
         }
         return historyFile;
     }
