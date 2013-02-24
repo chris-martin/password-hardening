@@ -6,6 +6,7 @@ import seclogin.MeasurementParams;
 import seclogin.MeasurementStats;
 import seclogin.Password;
 import seclogin.SecurityParameters;
+import seclogin.instructiontable.InstructionTable.Entry.Column;
 import seclogin.math.Interpolation;
 import seclogin.math.Mod;
 import seclogin.math.PasswordBasedPRF;
@@ -23,6 +24,8 @@ import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static seclogin.instructiontable.InstructionTable.Entry.Column.ALPHA;
+import static seclogin.instructiontable.InstructionTable.Entry.Column.BETA;
 
 /**
  * An instruction table that contains values from which the hardened password can be recovered
@@ -60,28 +63,40 @@ public class InstructionTable {
      * measurements and `decrypting` the y value using the given regular password.
      */
     List<Point> points(Password pwd, double[] measurements, MeasurementParams[] measurementParams) {
+        checkNotNull(measurements);
         checkArgument(measurements.length == table.length);
         checkNotNull(measurementParams);
+        checkArgument(measurementParams.length == measurements.length);
+
+        Column[] selectedColumns = selectColumn(measurements, measurementParams);
 
         PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, q);
         SparsePRP p = new SparsePRP(r, q);
 
         List<Point> points = new ArrayList<Point>();
         for (int i = 0; i < measurements.length ; i++) {
-            Entry entry = table[i];
+            Column selectedColumn = checkNotNull(selectedColumns[i]);
 
-            BigInteger x, y;
-            if (measurements[i] < measurementParams[i].responseMean()) {
-                x = p.apply(2*i);
-                y = entry.alpha.subtract(g.of(2*i)).mod(q.q);
-            } else {
-                x = p.apply((2*i)+1);
-                y = entry.beta.subtract(g.of((2*i)+1)).mod(q.q);
-            }
+            int input = selectedColumn == ALPHA ? (2*i) : ((2*i)+1);
+            BigInteger x = p.apply(input);
+            BigInteger y = table[i].get(selectedColumn).subtract(g.of(input)).mod(q.q);
 
             points.add(new Point(x, y));
         }
         return points;
+    }
+
+    /** Selects the appropriate column from each table entry using the given measurements. */
+    Column[] selectColumn(double[] measurements, MeasurementParams[] measurementParams) {
+        checkNotNull(measurements);
+        checkNotNull(measurementParams);
+        checkArgument(measurements.length == measurementParams.length);
+
+        Column[] selectedColumns = new Column[measurements.length];
+        for (int i = 0; i < measurements.length ; i++) {
+            selectedColumns[i] = measurements[i] < measurementParams[i].responseMean() ? ALPHA : BETA;
+        }
+        return selectedColumns;
     }
 
     /**
@@ -169,6 +184,13 @@ public class InstructionTable {
             this.alpha = alpha;
             this.beta = beta;
         }
+
+        BigInteger get(Column column) {
+            checkNotNull(column);
+            return column == ALPHA ? alpha : beta;
+        }
+
+        enum Column { ALPHA, BETA }
 
         @Override
         public boolean equals(Object o) {

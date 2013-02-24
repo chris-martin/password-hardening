@@ -8,46 +8,68 @@ import seclogin.MeasurementParams;
 import seclogin.Password;
 import seclogin.TestRandom;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.Random;
+
+import static seclogin.instructiontable.InstructionTable.Entry.Column.ALPHA;
+import static seclogin.instructiontable.InstructionTable.Entry.Column.BETA;
 
 public class InstructionTableTest {
 
     private Random random;
-
-    private MeasurementParams[] measurementParams;
+    private RandomMeasurementParams randomMeasurementParams;
 
     @Before
     public void setUp() throws Exception {
         random = TestRandom.random();
-        measurementParams = new MeasurementParams[3];
-        for (int i = 0; i < measurementParams.length; i++) {
-            measurementParams[i] = new MeasurementParams(random.nextInt(20), 1.0);
-        }
+        randomMeasurementParams = new RandomMeasurementParams(random);
     }
 
     @Test
-    public void testWriteAndRead() throws Exception {
-        InstructionTable written =
-            InstructionTable.generate(new Password("asdf"), measurementParams, random).table;
+    public void testGenerateWithoutStats() throws Exception {
+        Password pwd = new Password("asdf");
+        MeasurementParams[] measurementParams = randomMeasurementParams.nextMeasurementParams(3);
+        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
+                InstructionTable.generate(pwd, measurementParams, random);
 
-        InstructionTableIo io = new InstructionTableIo();
+        Assert.assertEquals(measurementParams.length, tableAndHpwd.table.table.length);
+    }
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        io.write(written, out);
+    @Test
+    public void testSelectColumn() throws Exception {
+        Password pwd = new Password("asdf");
+        MeasurementParams[] measurementParams = new MeasurementParams[]{
+                new MeasurementParams(10.0, 2.0),
+                new MeasurementParams(10.0, 2.0),
+                new MeasurementParams(10.0, 2.0)
+        };
 
-        InstructionTable read = io.read(new ByteArrayInputStream(out.toByteArray()));
+        InstructionTable table = InstructionTable.generate(pwd, measurementParams, random).table;
 
-        Assert.assertEquals(written, read);
+        double[] measurements = new double[] {
+                9.9999, // expect alpha
+                10.0, // expect beta
+                10.0001 // expect beta
+        };
+
+        InstructionTable.Entry.Column[] expected = new InstructionTable.Entry.Column[] {
+                ALPHA,
+                BETA,
+                BETA
+        };
+
+        Assert.assertArrayEquals(expected, table.selectColumn(measurements, measurementParams));
+
     }
 
     @Test
     public void testInterpolateHpwd() throws Exception {
         Password pwd = new Password("asdf");
+        MeasurementParams[] measurementParams = randomMeasurementParams.nextMeasurementParams(3);
+
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
             InstructionTable.generate(pwd, measurementParams, random);
 
+        // all alpha and beta are good, so any random measurements should interpolate correct hpwd
         double[] measurements = new double[measurementParams.length];
         for (int i = 0; i < measurements.length; i++) {
             measurements[i] = measurementParams[i].responseMean() + random.nextInt(6) - 3;
