@@ -1,11 +1,11 @@
 package seclogin;
 
-import jline.console.ConsoleReader;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import scala.tools.jline.console.ConsoleReader;
 
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -72,9 +72,31 @@ public class Console {
     static class ConsoleUI implements UserInterface {
 
         private final ConsoleReader console;
+        private final Thread shutdownHook;
 
-        ConsoleUI(ConsoleReader console) {
+        ConsoleUI(final ConsoleReader console) {
             this.console = console;
+            shutdownHook = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    restoreTerminal();
+                }
+            });
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            restoreTerminal();
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            super.finalize();
+        }
+
+        private void restoreTerminal() {
+            try {
+                console.getTerminal().restore();
+            } catch (Throwable ignored) {
+            }
         }
 
         ConsoleUI() {
