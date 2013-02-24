@@ -5,9 +5,9 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import seclogin.MeasurementStats;
+import seclogin.SecurityParameters;
 import seclogin.User;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -45,8 +45,11 @@ public class HistoryFile {
         checkArgument(params.maxNrOfMeasurements > 0);
 
         byte[] userHash = USER_HASH_FN.hashString(user.user).asBytes();
-        return new HistoryFile(userHash, 0,
-            new double[params.maxNrOfMeasurements][params.nrOfFeatures]);
+        double[][] measurements = new double[params.maxNrOfMeasurements][params.nrOfFeatures];
+        for (double[] measurement : measurements) {
+            Arrays.fill(measurement, Double.NaN);
+        }
+        return new HistoryFile(userHash, 0, measurements);
     }
 
     /** Returns whether this history file's user hash matches that of the given user. */
@@ -71,24 +74,36 @@ public class HistoryFile {
     }
 
     /**
-     * Returns statistics of the measurements in this history file, or null if the file is not yet full, i.e.,
-     * if the user has not successfully logged in at least as many times as measurements can fit in this history file.
+     * Returns statistics of the measurements in this history file. The stats for features for which there aren't
+     * enough entries in the table will be null. If the file is not yet full, i.e., if the user has not successfully
+     * logged in at least as many times as measurements can fit in this history file, then all features will have
+     * null stats. If the file is full, but for a particular feature the user did not supply a measurement on
+     * more than half of the entries in the history file, the stats for that feature will be null.
+     *
+     * @see SecurityParameters#DECLINED_MEASUREMENT_NON_DISTINGUISHMENT_THRESHOLD
      */
-    @Nullable
     public MeasurementStats[] calculateStats() {
-        if (nrOfMeasurements != measurements.length) {
-            return null; // the history file isn't full yet
-        }
+        checkState(measurements.length > 0);
 
         int nrOfFeatures = measurements[0].length;
         MeasurementStats[] stats = new MeasurementStats[nrOfFeatures];
+
+        if (nrOfMeasurements != measurements.length) {
+            return stats; // the history file isn't full yet
+        }
+
         for (int i = 0; i < stats.length; i++) {
             SummaryStatistics stat = new SummaryStatistics();
             for (double[] measurement : measurements) {
                 checkState(measurement.length == nrOfFeatures);
-                stat.addValue(measurement[i]);
+                double featureMeasurement = measurement[i];
+                if (!Double.isNaN(featureMeasurement)) {
+                    stat.addValue(featureMeasurement);
+                }
             }
-            stats[i] = new MeasurementStats(stat.getMean(), stat.getStandardDeviation());
+            boolean notEnoughMeasurements = stat.getN() / (double) measurements.length <
+                    SecurityParameters.DECLINED_MEASUREMENT_NON_DISTINGUISHMENT_THRESHOLD;
+            stats[i] = notEnoughMeasurements ? null : new MeasurementStats(stat.getMean(), stat.getStandardDeviation());
         }
         return stats;
     }

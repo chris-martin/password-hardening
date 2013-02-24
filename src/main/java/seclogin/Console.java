@@ -1,6 +1,5 @@
 package seclogin;
 
-import com.google.common.base.Strings;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -92,10 +91,7 @@ public class Console {
 
         private String ask(String prompt, Character mask) {
             try {
-                while (true) {
-                    String response = console.readLine(prompt + " ", mask);
-                    if (!Strings.isNullOrEmpty(response)) return response;
-                }
+                return console.readLine(prompt + " ", mask);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -6,7 +6,6 @@ import seclogin.historyfile.HistoryFileCipher;
 import seclogin.historyfile.IndecipherableHistoryFileException;
 import seclogin.instructiontable.InstructionTable;
 
-import javax.annotation.Nullable;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -42,8 +41,8 @@ public class Authenticator {
         // add the new measurements to the history file
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
-        // calculate the measurement statistics for this user if the history file is full
-        @Nullable MeasurementStats[] measurementStats = historyFile.calculateStats();
+        // calculate the measurement statistics for this user
+        MeasurementStats[] measurementStats = historyFile.calculateStats();
 
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
             InstructionTable.generate(password, measurementParams, measurementStats, random);

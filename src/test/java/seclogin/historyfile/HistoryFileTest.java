@@ -6,6 +6,7 @@ import org.junit.Test;
 import seclogin.TestRandom;
 import seclogin.User;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class HistoryFileTest {
@@ -24,7 +25,14 @@ public class HistoryFileTest {
     @Test
     public void testEmptyHistoryFile() throws Exception {
         HistoryFile empty = HistoryFile.emptyHistoryFile(new User("asdf"), params);
-        Assert.assertArrayEquals(new double[params.maxNrOfMeasurements][params.nrOfFeatures], empty.measurements);
+
+        Assert.assertEquals(0, empty.nrOfMeasurements);
+
+        double[][] expectedMeasurements = new double[params.maxNrOfMeasurements][params.nrOfFeatures];
+        for (double[] expectedMeasurement : expectedMeasurements) {
+            Arrays.fill(expectedMeasurement, Double.NaN);
+        }
+        Assert.assertArrayEquals(expectedMeasurements, empty.measurements);
     }
 
     @Test

@@ -1,5 +1,6 @@
 package seclogin;
 
+/** Measurement statistics for a particular user-feature pair. */
 public class MeasurementStats {
 
     private final double mean;
@@ -19,4 +20,11 @@ public class MeasurementStats {
         return stDev;
     }
 
+    @Override
+    public String toString() {
+        return "MeasurementStats{" +
+                "mean=" + mean +
+                ", stDev=" + stDev +
+                '}';
+    }
 }

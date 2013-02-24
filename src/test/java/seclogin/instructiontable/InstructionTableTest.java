@@ -30,7 +30,7 @@ public class InstructionTableTest {
     @Test
     public void testWriteAndRead() throws Exception {
         InstructionTable written =
-            InstructionTable.generate(new Password("asdf"), measurementParams, null, random).table;
+            InstructionTable.generate(new Password("asdf"), measurementParams, random).table;
 
         InstructionTableIo io = new InstructionTableIo();
 
@@ -46,7 +46,7 @@ public class InstructionTableTest {
     public void testInterpolateHpwd() throws Exception {
         Password pwd = new Password("asdf");
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(pwd, measurementParams, null, random);
+            InstructionTable.generate(pwd, measurementParams, random);
 
         double[] measurements = new double[measurementParams.length];
         for (int i = 0; i < measurements.length; i++) {

@@ -15,7 +15,6 @@ import seclogin.math.RandomBigIntModQ;
 import seclogin.math.RandomPolynomial;
 import seclogin.math.SparsePRP;
 
-import javax.annotation.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,17 +85,28 @@ public class InstructionTable {
     }
 
     /**
-     * Generates the an instruction table and hardened password using the given
-     * regular password and, if supplied, measurement statistics particular to
-     * the user. If no measurement stats are given, the user is not yet
-     * distinguished by any features.
+     * Generates an instruction table where no features are distinguishing and
+     * corresponding hardened password using the given regular password.
      */
     public static InstructionTableAndHardenedPassword generate(Password pwd,
                                                                MeasurementParams[] measurementParams,
-                                                               @Nullable MeasurementStats[] measurementStats,
+                                                               Random random) {
+        return generate(pwd, measurementParams, new MeasurementStats[measurementParams.length], random);
+    }
+
+    /**
+     * Generates an instruction table and corresponding hardened password using the
+     * given regular password and measurement statistics particular to the user. If
+     * no measurement stats are given for a particular feature, the user is
+     * considered to be not distinguished by that feature.
+     */
+    public static InstructionTableAndHardenedPassword generate(Password pwd,
+                                                               MeasurementParams[] measurementParams,
+                                                               MeasurementStats[] measurementStats,
                                                                Random random) {
         checkNotNull(measurementParams);
-        checkArgument(measurementStats == null || measurementStats.length == measurementParams.length);
+        checkNotNull(measurementStats);
+        checkArgument(measurementStats.length == measurementParams.length);
 
         Mod q = new Mod(BigInteger.probablePrime(SecurityParameters.Q_LEN, random));
         RandomBigIntModQ randomBigIntModQ = new RandomBigIntModQ(random, q);
@@ -120,16 +130,14 @@ public class InstructionTable {
             BigInteger y1 = f.apply(p.apply((2*i)+1));
             BigInteger beta = y1.add(g.of((2*i)+1)).mod(q.q);
 
-            if (measurementStats != null) {
-                MeasurementParams system = measurementParams[i];
-                MeasurementStats user = measurementStats[i];
-                checkNotNull(user);
-
-                // if this feature is distinguishing for this user, make only one of alpha or beta `good'
+            MeasurementParams system = measurementParams[i];
+            MeasurementStats user = measurementStats[i];
+            if (user != null) { // this feature might be distinguishing
+                // if this feature is distinguishing for the user, make only one of alpha or beta `good'
                 if (Math.abs(user.mean() - system.responseMean()) > (user.stDev() * system.stDevMultiplier())) {
-                    if (user.mean() < system.responseMean()) {
+                    if (user.mean() < system.responseMean()) { // alpha is `good'
                         beta = randomBigIntModQ.nextBigIntegerModQNotEqualTo(beta);
-                    } else {
+                    } else { // beta is `good'
                         alpha = randomBigIntModQ.nextBigIntegerModQNotEqualTo(alpha);
                     }
                 }

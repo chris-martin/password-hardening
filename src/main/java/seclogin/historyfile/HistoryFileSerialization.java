@@ -17,6 +17,7 @@ class HistoryFileSerialization {
     /** Serializes this history file (unencrypted). */
     byte[] toByteArray(HistoryFile historyFile) {
         checkNotNull(historyFile);
+        checkArgument(historyFile.measurements.length > 0);
 
         byte[] plaintext = new byte[sizeInBytes(historyFile)];
 
@@ -52,7 +53,6 @@ class HistoryFileSerialization {
 
     /** Returns the total number of bytes needed to serialize this history file. */
     private int sizeInBytes(HistoryFile historyFile) {
-        checkArgument(historyFile.measurements.length > 0);
         return (HistoryFile.USER_HASH_FN.bits() / Byte.SIZE) +
                 (3 * INT_SIZE_IN_BYTES) +
                 (historyFile.measurements.length * historyFile.measurements[0].length * DOUBLE_SIZE_IN_BYTES);

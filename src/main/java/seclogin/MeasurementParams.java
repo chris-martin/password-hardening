@@ -1,5 +1,10 @@
 package seclogin;
 
+/**
+ * System-wide parameters for a particular feature that govern whether
+ * measurements of the feature for a particular user distinguish that user
+ * with respect to that feature.
+ */
 public class MeasurementParams {
 
     private final double responseMean;

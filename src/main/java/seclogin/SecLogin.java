@@ -1,5 +1,6 @@
 package seclogin;
 
+import com.google.common.base.Strings;
 import seclogin.crypto.Aes128Cbc;
 import seclogin.crypto.BlockCipher;
 import seclogin.historyfile.EncryptedHistoryFile;
@@ -41,8 +42,8 @@ public class SecLogin {
 
     public void prompt() {
 
-        User user = new User(userInterface.ask(UserInterface.UserPrompt));
-        Password password = readPassword();
+        User user = askUser();
+        Password password = askPassword();
         double[] measurements = askQuestions();
 
         UserState userState = userStatePersistence.read(user);
@@ -61,7 +62,16 @@ public class SecLogin {
         userInterface.tell("");
     }
 
-    private Password readPassword() {
+    private User askUser() {
+        while (true) {
+            String response = userInterface.ask(UserInterface.UserPrompt);
+            if (!Strings.isNullOrEmpty(response)) {
+                return new User(response);
+            }
+        }
+    }
+
+    private Password askPassword() {
         return new Password(userInterface.askSecret(UserInterface.PasswordPrompt));
     }
 
@@ -77,6 +87,9 @@ public class SecLogin {
     private double askQuestion(Question question) {
         while (true) {
             String answer = userInterface.ask(question.question());
+            if (Strings.isNullOrEmpty(answer)) {
+                return Double.NaN;
+            }
             try {
                 return Double.parseDouble(answer);
             } catch (NumberFormatException e) {
@@ -86,14 +99,14 @@ public class SecLogin {
     }
 
     public void addUser(String user) {
-        Password password = readPassword();
+        Password password = askPassword();
         UserState userState = generateNewUserState(new User(user), password);
         userStatePersistence.write(userState);
     }
 
     private UserState generateNewUserState(User user, Password password) {
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                InstructionTable.generate(password, measurementParams, null, random);
+                InstructionTable.generate(password, measurementParams, random);
         HistoryFile emptyHistoryFile = HistoryFile.emptyHistoryFile(user, historyFileParams);
         EncryptedHistoryFile encryptedHistoryFile = historyFileCipher.encrypt(emptyHistoryFile, tableAndHpwd.hpwd);
         return new UserState(user, tableAndHpwd.table, encryptedHistoryFile);
