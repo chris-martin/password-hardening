@@ -27,7 +27,7 @@ object SecLoginBuild extends Build {
       libraryDependencies ++= Seq(
         "com.google.guava" % "guava" % "14.0-rc3",
         "net.sourceforge.argparse4j" % "argparse4j" % "0.3.2",
-        "org.scala-lang" % "jline" % "2.10.0" exclude("org.fusesource.jansi", "jansi"),
+        "jline" % "jline" % "2.10",
         "org.apache.commons" % "commons-math3" % "3.1.1",
         "com.google.code.findbugs" % "jsr305" % "2.0.1"
       ),
