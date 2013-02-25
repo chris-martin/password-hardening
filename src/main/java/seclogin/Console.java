@@ -44,7 +44,7 @@ public class Console {
             random,
             QuestionBank.createDefault(),
             historyFileSize,
-            0.51
+            0.49
         );
 
         try {

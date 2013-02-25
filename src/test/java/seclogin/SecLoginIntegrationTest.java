@@ -4,6 +4,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,6 +29,13 @@ public class SecLoginIntegrationTest {
     public void setUp() throws Exception {
 
         userInterface = Mockito.mock(UserInterface.class);
+
+        Mockito.doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                System.out.println(invocation.getArguments()[0].toString().trim());
+                return null;
+            }
+        }).when(userInterface).tell(Mockito.<String>any());
 
         userStatePersistence = new UserStatePersistence() {
 
@@ -118,7 +127,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, 0.51);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, .99);
 
         passwordIs("password");
         userIs("steve");
@@ -139,6 +148,37 @@ public class SecLoginIntegrationTest {
 
     }
 
+    @Test
+    public void test_feature_correctness() throws Exception {
 
+        Question question = new Question("Question A", new MeasurementParams(50, 2));
+        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, .99);
+
+        passwordIs("password");
+        userIs("steve");
+        answerIs(question, "20");
+
+        // Add one user, and the system prompts for a password.
+        secLogin.addUser("steve");
+        expect(PasswordPrompt, Done);
+
+        // Log in with correct password twice
+        for (int i = 0; i < 2; i++) {
+            secLogin.prompt();
+            expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+        }
+
+        // Using a slightly different answer should be okay.
+        answerIs(question, "21.2");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+        // Using a radically different answer should fail.
+        answerIs(question, "99");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Failure, Done);
+
+    }
 
 }
