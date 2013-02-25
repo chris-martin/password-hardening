@@ -1,0 +1,17 @@
+REQUIREMENTS
+============
+- Java 6 or greater (tested with Java 7 update 13)
+- Linux (tested on Fedora Core 18)
+
+BUILD
+=====
+Extract the archive. From the the directory where extracted:
+$ ./seclogin.sh
+
+RUN
+===
+To create a user:
+$ ./seclogin.sh -a usernamehere
+
+To login:
+$ ./seclogin.sh
