@@ -27,3 +27,12 @@ $ ./seclogin.sh -a usernamehere
 
 To log in:
 $ ./seclogin.sh
+
+Dependencies
+------------
+- sbt (for build)
+- Guava (for general Java utilities)
+- Argparse4J (for command-line argument parsing)
+- JLine (for console input)
+- Commons Math (for statistics)
+- JSR 305 (for @Nullable annotation)
