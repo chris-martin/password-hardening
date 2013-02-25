@@ -50,3 +50,4 @@ response mean parameter:
 
 For flexibility, our implementation supports a distinct k parameter (standard deviation factor)
 for each question, but we use k = 2 for all questions in the demo.
+A feature is allowed to be distinguishing even if one of the two history entries is "unanswered".
