@@ -16,20 +16,34 @@ import static seclogin.instructiontable.Distinguishment.BETA;
  */
 public class DistinguishmentPolicy {
 
+    private final MeasurementParams[] measurementParams;
+    private final double declinedMeasurementNonDistinguishmentThreshold;
+
+    /**
+     * @param measurementParams system-wide feature parameters
+     * @param declinedMeasurementNonDistinguishmentThreshold
+     *        lower bound (exclusive) on the percentage of measurements for a particular feature declined by the user
+     *        at which that feature will be considered non-distinguishing.
+     */
+    public DistinguishmentPolicy(MeasurementParams[] measurementParams,
+                                 double declinedMeasurementNonDistinguishmentThreshold) {
+        this.measurementParams = measurementParams;
+        this.declinedMeasurementNonDistinguishmentThreshold = declinedMeasurementNonDistinguishmentThreshold;
+    }
+
     /**
      * Determines the how each feature's measurement distinguishes it according to the system-wide
      * parameter of that feature.
      *
      * @see #measurementDistinguishment(double, seclogin.MeasurementParams)
      */
-    public final Distinguishment[] measurmentDistinguishment(double[] measurements, MeasurementParams[] params) {
+    public final Distinguishment[] measurmentDistinguishment(double[] measurements) {
         checkNotNull(measurements);
-        checkNotNull(params);
-        checkArgument(measurements.length == params.length);
+        checkArgument(measurements.length == measurementParams.length);
 
         Distinguishment[] distinguishments = new Distinguishment[measurements.length];
         for (int i = 0; i < measurements.length ; i++) {
-            distinguishments[i] = measurementDistinguishment(measurements[i], params[i]);
+            distinguishments[i] = measurementDistinguishment(measurements[i], measurementParams[i]);
         }
         return distinguishments;
     }
@@ -47,14 +61,13 @@ public class DistinguishmentPolicy {
      *
      * @see #userDistinguishment(seclogin.MeasurementStats, seclogin.MeasurementParams)
      */
-    public final Distinguishment[] userDistinguishment(MeasurementStats[] stats, MeasurementParams[] params) {
+    public final Distinguishment[] userDistinguishment(MeasurementStats[] stats) {
         checkNotNull(stats);
-        checkNotNull(params);
-        checkArgument(stats.length == params.length);
+        checkArgument(stats.length == measurementParams.length);
 
         Distinguishment[] distinguishments = new Distinguishment[stats.length];
         for (int i = 0; i < stats.length ; i++) {
-            distinguishments[i] = userDistinguishment(stats[i], params[i]);
+            distinguishments[i] = userDistinguishment(stats[i], measurementParams[i]);
         }
         return distinguishments;
     }
@@ -67,9 +80,13 @@ public class DistinguishmentPolicy {
      * @return the distinguishment of a feature, or null if the feature is not distinguishing)
      */
     @Nullable
-    protected Distinguishment userDistinguishment(@Nullable MeasurementStats stats, MeasurementParams params) {
+    protected Distinguishment userDistinguishment(MeasurementStats stats, MeasurementParams params) {
         if (stats == null) {
             return null; // no user stats for feature, so feature is not distinguishing
+        }
+
+        if (stats.missingValuesPercentage() > declinedMeasurementNonDistinguishmentThreshold) {
+            return null; // the user declined to answer too often for the feature to be distinguishing
         }
 
         if (Math.abs(stats.mean() - params.responseMean()) > (stats.stDev() * params.stDevMultiplier())) {

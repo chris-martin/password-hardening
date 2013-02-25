@@ -1,7 +1,6 @@
 package seclogin.instructiontable;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import seclogin.MeasurementParams;
 
@@ -10,12 +9,6 @@ import static seclogin.instructiontable.Distinguishment.BETA;
 
 public class DistinguishmentPolicyTest {
 
-    DistinguishmentPolicy policy;
-
-    @Before
-    public void setUp() throws Exception {
-        policy = new DistinguishmentPolicy();
-    }
 
     @Test
     public void testMeasurementDistinguishment() throws Exception {
@@ -24,6 +17,7 @@ public class DistinguishmentPolicyTest {
                 new MeasurementParams(10.0, 2.0),
                 new MeasurementParams(10.0, 2.0)
         };
+        DistinguishmentPolicy policy = new DistinguishmentPolicy(measurementParams, Double.NaN);
 
         double[] measurements = new double[] {
                 9.9999, // expect alpha
@@ -37,7 +31,7 @@ public class DistinguishmentPolicyTest {
                 BETA
         };
 
-        Assert.assertArrayEquals(expected, policy.measurmentDistinguishment(measurements, measurementParams));
+        Assert.assertArrayEquals(expected, policy.measurmentDistinguishment(measurements));
     }
 
     @Test

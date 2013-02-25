@@ -11,16 +11,13 @@ import seclogin.instructiontable.InstructionTable;
 import javax.annotation.Nullable;
 import java.util.Random;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 /** Authenticates users against their hardened passwords. */
 public class Authenticator {
     
     private final Random random;
-    private final MeasurementParams[] measurementParams;
     private final HistoryFileCipher historyFileCipher;
-    private final DistinguishmentPolicy distinguishmentPolicy = new DistinguishmentPolicy();
-    private final double declinedMeasurementNonDistinguishmentThreshold;
+    private final DistinguishmentPolicy distinguishmentPolicy;
+
 
     public Authenticator(
             Random random,
@@ -29,10 +26,9 @@ public class Authenticator {
             double declinedMeasurementNonDistinguishmentThreshold) {
 
         this.random = random;
-        this.measurementParams = measurementParams;
         this.historyFileCipher = historyFileCipher;
-        this.declinedMeasurementNonDistinguishmentThreshold =
-            declinedMeasurementNonDistinguishmentThreshold;
+        distinguishmentPolicy =
+                new DistinguishmentPolicy(measurementParams, declinedMeasurementNonDistinguishmentThreshold);
     }
 
     /**
@@ -41,11 +37,9 @@ public class Authenticator {
       */
     @Nullable
     public UserState authenticate(UserState userState, Password password, double[] measurements) {
-        checkArgument(measurements.length == measurementParams.length);
-
         // determine feature distinguishment from measurements
         Distinguishment[] distinguishments =
-                distinguishmentPolicy.measurmentDistinguishment(measurements, measurementParams);
+                distinguishmentPolicy.measurmentDistinguishment(measurements);
 
         // interpolate hardened password from regular password and distinguishments
         HardenedPassword hpwd = userState.instructionTable.interpolateHpwd(password, distinguishments);
@@ -63,11 +57,10 @@ public class Authenticator {
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
         // calculate the historical measurement statistics for this user
-        MeasurementStats[] measurementStats = historyFile.calculateStats(
-            declinedMeasurementNonDistinguishmentThreshold);
+        MeasurementStats[] measurementStats = historyFile.calculateStats();
 
         // determine feature distinguishment from user's statistics
-        distinguishments = distinguishmentPolicy.userDistinguishment(measurementStats, measurementParams);
+        distinguishments = distinguishmentPolicy.userDistinguishment(measurementStats);
 
         // create new instruction table and hardened password
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =

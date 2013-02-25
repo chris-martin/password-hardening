@@ -5,7 +5,6 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import seclogin.MeasurementStats;
-import seclogin.SecurityParameters;
 import seclogin.User;
 
 import java.util.Arrays;
@@ -79,12 +78,8 @@ public class HistoryFile {
      * logged in at least as many times as measurements can fit in this history file, then all features will have
      * null stats. If the file is full, but for a particular feature the user did not supply a measurement on
      * more than half of the entries in the history file, the stats for that feature will be null.
-     *
-     * @param declinedMeasurementNonDistinguishmentThreshold
-     * Lower bound (exclusive) on the percentage of measurements for a particular feature declined by the user
-     * at which that feature will be considered non-distinguishing.
      */
-    public MeasurementStats[] calculateStats(double declinedMeasurementNonDistinguishmentThreshold) {
+    public MeasurementStats[] calculateStats() {
         checkState(measurements.length > 0);
 
         int nrOfFeatures = measurements[0].length;
@@ -103,9 +98,8 @@ public class HistoryFile {
                     stat.addValue(featureMeasurement);
                 }
             }
-            boolean notEnoughMeasurements = stat.getN() / (double) measurements.length <
-                    declinedMeasurementNonDistinguishmentThreshold;
-            stats[i] = notEnoughMeasurements ? null : new MeasurementStats(stat.getMean(), stat.getStandardDeviation());
+            double missingValuesPercentage = (measurements.length - (int) stat.getN()) / (double) measurements.length;
+            stats[i] = new MeasurementStats(stat.getMean(), stat.getStandardDeviation(), missingValuesPercentage);
         }
         return stats;
     }

@@ -4,12 +4,13 @@ package seclogin;
 public class MeasurementStats {
 
     private final double mean;
-
     private final double stDev;
+    private final double missingValuesPercentage;
 
-    public MeasurementStats(double mean, double stDev) {
+    public MeasurementStats(double mean, double stDev, double missingValuesPercentage) {
         this.mean = mean;
         this.stDev = stDev;
+        this.missingValuesPercentage = missingValuesPercentage;
     }
 
     public double mean() {
@@ -20,11 +21,16 @@ public class MeasurementStats {
         return stDev;
     }
 
+    public double missingValuesPercentage() {
+        return missingValuesPercentage;
+    }
+
     @Override
     public String toString() {
         return "MeasurementStats{" +
                 "mean=" + mean +
                 ", stDev=" + stDev +
+                ", missingValuesPercentage=" + missingValuesPercentage +
                 '}';
     }
 }
