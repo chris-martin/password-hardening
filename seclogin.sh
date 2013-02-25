@@ -4,7 +4,7 @@ JAR=target/seclogin.jar
 
 if [ ! -e "$JAR" ]
 then
-  sbt assembly
+  java -jar sbt-launch.jar assembly
 fi
 
 java -jar "$JAR" "$@"
