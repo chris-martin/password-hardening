@@ -19,10 +19,10 @@ Usage
 -----
 
 To create a user:
-$ ./seclogin.sh -a usernamehere
+ $ ./seclogin.sh -a usernamehere
 
 To log in:
-$ ./seclogin.sh
+ $ ./seclogin.sh
 
 Do not worry about compiling; the first time you run `seclogin.sh`, it will automatically
 build SecLogin (target/seclogin.jar).
