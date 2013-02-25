@@ -78,7 +78,6 @@ public class HistoryFileTest {
         file = file.withMostRecentMeasurements(new double[]{2.0, Double.NaN});
         file = file.withMostRecentMeasurements(new double[]{Double.NaN, 20.0});
         file = file.withMostRecentMeasurements(new double[]{6.0, 60.0});
-        System.out.println("asdfasfd " + file.nrOfMeasurements);
 
         MeasurementStats[] stats = file.calculateStats();
         MeasurementStats[] expectedStats = new MeasurementStats[]{
