@@ -2,6 +2,7 @@ package seclogin;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
@@ -9,13 +10,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class SecLoginIntegrationTest {
 
     UserInterface userInterface;
+
+    InOrder inOrder;
+
     UserStatePersistence userStatePersistence;
+
     Random random;
 
     @Before
@@ -39,6 +43,44 @@ public class SecLoginIntegrationTest {
 
         random = TestRandom.random();
 
+        inOrder = inOrder(userInterface);
+
+    }
+
+    void userIs(String user) {
+        when(userInterface.ask(UserInterface.UserPrompt)).thenReturn(user);
+    }
+
+    void passwordIs(String password) {
+        when(userInterface.askSecret(UserInterface.PasswordPrompt)).thenReturn(password);
+    }
+
+    void answerIs(Question question, String answer) {
+        when(userInterface.ask(question.question())).thenReturn(answer);
+    }
+
+    void expectNothing() {
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    void expectUserPrompt() {
+        inOrder.verify(userInterface).ask(UserInterface.UserPrompt);
+    }
+
+    void expectPasswordPrompt() {
+        inOrder.verify(userInterface).askSecret(UserInterface.PasswordPrompt);
+    }
+
+    void expectQuestionPrompt(Question question) {
+        inOrder.verify(userInterface).ask(question.question());
+    }
+
+    void expectSuccess() {
+        inOrder.verify(userInterface).tell(UserInterface.Success);
+    }
+
+    void expectFailure() {
+        inOrder.verify(userInterface).tell(UserInterface.Failure);
     }
 
     @Test
@@ -47,29 +89,42 @@ public class SecLoginIntegrationTest {
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList());
         SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions);
 
-        when(userInterface.askSecret(Mockito.<String>any())).thenReturn("password");
+        passwordIs("password");
+        userIs("steve");
+
         secLogin.addUser("steve");
+        expectPasswordPrompt();
+        expectNothing();
+
+        secLogin.prompt();
+        expectUserPrompt();
+        expectPasswordPrompt();
+        expectSuccess();
+        expectNothing();
 
     }
 
     @Test
     public void test_with_one_question() throws Exception {
 
-        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(
-            new Question("Question A", new MeasurementParams(50, 2))
-        ));
+        Question question = new Question("Question A", new MeasurementParams(50, 2));
+        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
         SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions);
 
-        when(userInterface.askSecret(UserInterface.PasswordPrompt)).thenReturn("password");
+        passwordIs("password");
+        userIs("steve");
+        answerIs(question, "20");
 
         secLogin.addUser("steve");
-
-        when(userInterface.ask(UserInterface.UserPrompt)).thenReturn("steve");
-        when(userInterface.ask("Question A")).thenReturn("20");
+        expectPasswordPrompt();
+        expectNothing();
 
         secLogin.prompt();
-
-        verify(userInterface).tell(UserInterface.Success);
+        expectUserPrompt();
+        expectPasswordPrompt();
+        expectQuestionPrompt(question);
+        expectSuccess();
+        expectNothing();
 
     }
 
