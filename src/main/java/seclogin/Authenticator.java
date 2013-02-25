@@ -20,11 +20,19 @@ public class Authenticator {
     private final MeasurementParams[] measurementParams;
     private final HistoryFileCipher historyFileCipher;
     private final DistinguishmentPolicy distinguishmentPolicy = new DistinguishmentPolicy();
+    private final double declinedMeasurementNonDistinguishmentThreshold;
 
-    public Authenticator(Random random, MeasurementParams[] measurementParams, HistoryFileCipher historyFileCipher) {
+    public Authenticator(
+            Random random,
+            MeasurementParams[] measurementParams,
+            HistoryFileCipher historyFileCipher,
+            double declinedMeasurementNonDistinguishmentThreshold) {
+
         this.random = random;
         this.measurementParams = measurementParams;
         this.historyFileCipher = historyFileCipher;
+        this.declinedMeasurementNonDistinguishmentThreshold =
+            declinedMeasurementNonDistinguishmentThreshold;
     }
 
     /**
@@ -55,7 +63,8 @@ public class Authenticator {
         historyFile = historyFile.withMostRecentMeasurements(measurements);
 
         // calculate the historical measurement statistics for this user
-        MeasurementStats[] measurementStats = historyFile.calculateStats();
+        MeasurementStats[] measurementStats = historyFile.calculateStats(
+            declinedMeasurementNonDistinguishmentThreshold);
 
         // determine feature distinguishment from user's statistics
         distinguishments = distinguishmentPolicy.userDistinguishment(measurementStats, measurementParams);

@@ -27,8 +27,15 @@ public class SecLogin {
     private final MeasurementParams[] measurementParams;
     private final HistoryFileParams historyFileParams;
 
+
+    /**
+     * @param declinedMeasurementNonDistinguishmentThreshold
+     * Lower bound (exclusive) on the percentage of measurements for a particular feature
+     * declined by the user at which that feature will be considered non-distinguishing.
+     */
     public SecLogin(UserInterface userInterface, UserStatePersistence userStatePersistence,
-                    Random random, QuestionBank questionBank, int historyFileSize) {
+                    Random random, QuestionBank questionBank, int historyFileSize,
+                    double declinedMeasurementNonDistinguishmentThreshold) {
         this.userInterface = userInterface;
         this.userStatePersistence = userStatePersistence;
         this.random = random;
@@ -43,7 +50,8 @@ public class SecLogin {
 
         BlockCipher cipher = new Aes128Cbc();
         historyFileCipher = new HistoryFileCipher(cipher);
-        authenticator = new Authenticator(random, measurementParams, historyFileCipher);
+        authenticator = new Authenticator(random, measurementParams, historyFileCipher,
+            declinedMeasurementNonDistinguishmentThreshold);
     }
 
     public void prompt() {

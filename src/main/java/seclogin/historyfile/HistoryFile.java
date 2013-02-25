@@ -80,9 +80,11 @@ public class HistoryFile {
      * null stats. If the file is full, but for a particular feature the user did not supply a measurement on
      * more than half of the entries in the history file, the stats for that feature will be null.
      *
-     * @see SecurityParameters#DECLINED_MEASUREMENT_NON_DISTINGUISHMENT_THRESHOLD
+     * @param declinedMeasurementNonDistinguishmentThreshold
+     * Lower bound (exclusive) on the percentage of measurements for a particular feature declined by the user
+     * at which that feature will be considered non-distinguishing.
      */
-    public MeasurementStats[] calculateStats() {
+    public MeasurementStats[] calculateStats(double declinedMeasurementNonDistinguishmentThreshold) {
         checkState(measurements.length > 0);
 
         int nrOfFeatures = measurements[0].length;
@@ -102,7 +104,7 @@ public class HistoryFile {
                 }
             }
             boolean notEnoughMeasurements = stat.getN() / (double) measurements.length <
-                    SecurityParameters.DECLINED_MEASUREMENT_NON_DISTINGUISHMENT_THRESHOLD;
+                    declinedMeasurementNonDistinguishmentThreshold;
             stats[i] = notEnoughMeasurements ? null : new MeasurementStats(stat.getMean(), stat.getStandardDeviation());
         }
         return stats;
