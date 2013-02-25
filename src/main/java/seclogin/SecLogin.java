@@ -28,7 +28,7 @@ public class SecLogin {
     private final HistoryFileParams historyFileParams;
 
     public SecLogin(UserInterface userInterface, UserStatePersistence userStatePersistence,
-                    Random random, QuestionBank questionBank) {
+                    Random random, QuestionBank questionBank, int historyFileSize) {
         this.userInterface = userInterface;
         this.userStatePersistence = userStatePersistence;
         this.random = random;
@@ -39,7 +39,6 @@ public class SecLogin {
         int nrOfFeatures = measurementParams.length;
         checkState(nrOfFeatures == questionBank.nrOfQuestions());
 
-        int historyFileSize = 2;
         historyFileParams = new HistoryFileParams(historyFileSize, nrOfFeatures);
 
         BlockCipher cipher = new Aes128Cbc();
