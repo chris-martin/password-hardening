@@ -8,6 +8,11 @@ Authors
 
 - Chris Martin       chris.martin@gatech.edu
 
+Collaborators
+-------------
+
+We had some discussions with Curtis Free about this project and the paper.
+
 Requirements
 ------------
 
