@@ -192,7 +192,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, .99);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .99);
 
         passwordIs("password");
         userIs("steve");
