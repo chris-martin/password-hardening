@@ -36,8 +36,6 @@ public class HardenedPassword {
 
     @Override
     public String toString() {
-        return "HardenedPassword{" +
-                "hpwd=" + hpwd +
-                '}';
+        return hpwd.toString(16);
     }
 }

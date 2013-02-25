@@ -2,7 +2,7 @@ package seclogin.historyfile;
 
 public class HistoryFileParams {
 
-    final int maxNrOfMeasurements;
+    public final int maxNrOfMeasurements;
     final int nrOfFeatures;
 
     public HistoryFileParams(int maxNrOfMeasurements, int nrOfFeatures) {

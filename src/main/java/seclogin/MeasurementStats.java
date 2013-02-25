@@ -37,9 +37,6 @@ public class MeasurementStats {
 
     @Override
     public String toString() {
-        return "MeasurementStats{" +
-                "mean=" + mean +
-                ", stDev=" + stDev +
-                '}';
+        return String.format("{mean=%.3f, stDev=%.3f}", mean, stDev);
     }
 }

@@ -5,6 +5,8 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.tools.jline.console.ConsoleReader;
 
 import java.io.File;
@@ -16,6 +18,8 @@ import java.util.Properties;
 import java.util.Random;
 
 public class Console {
+
+    private static final Logger log = LoggerFactory.getLogger(Console.class);
 
     private Console() {}
 
@@ -63,13 +67,13 @@ public class Console {
     }
 
     public static void main(Namespace args) {
-        boolean verbose = args.getBoolean("verbose");
+        if (!args.getBoolean("verbose")) {
+            LogConfiguration.disableLogging();
+        }
 
         Config config = loadAndUpdateConfig(args);
         int historyFileSize = config.getHistoryFileSize();
-        if (verbose) {
-            System.out.printf("Using history file size of %d.\n", historyFileSize);
-        }
+        log.debug("Using history file size = {}", historyFileSize);
 
         Random random = new SecureRandom();
         SecLogin secLogin = new SecLogin(
@@ -77,7 +81,7 @@ public class Console {
             new UserStateFilesystemPersistence(persistentStateDir()),
             random,
             QuestionBank.createDefault(),
-                historyFileSize
+            historyFileSize
         );
 
         String usernameToAdd = args.getString("add");
@@ -207,6 +211,7 @@ public class Console {
             }
             FileReader reader = new FileReader(file);
             try {
+                log.debug("Loading configuration from {}", file);
                 props.load(reader);
             } finally {
                 reader.close();
@@ -216,6 +221,7 @@ public class Console {
         void save() throws IOException {
             FileWriter writer = new FileWriter(file);
             try {
+                log.debug("Saving configuration to %s", file);
                 props.store(writer, null);
             } finally {
                 writer.close();

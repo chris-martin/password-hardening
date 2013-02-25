@@ -31,7 +31,7 @@ public class DistinguishmentPolicy {
      *
      * @see #measurementDistinguishment(double, seclogin.MeasurementParams)
      */
-    public final Distinguishment[] measurmentDistinguishment(double[] measurements) {
+    public final Distinguishment[] measurementDistinguishment(double[] measurements) {
         checkNotNull(measurements);
         checkArgument(measurements.length == measurementParams.length);
 

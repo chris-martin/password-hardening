@@ -1,5 +1,7 @@
 package seclogin;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import seclogin.historyfile.EncryptedHistoryFile;
 import seclogin.historyfile.HistoryFileIo;
 import seclogin.instructiontable.InstructionTable;
@@ -13,6 +15,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class UserStateFilesystemPersistence implements UserStatePersistence {
+
+    private static final Logger log = LoggerFactory.getLogger(UserStateFilesystemPersistence.class);
 
     private final File dir;
     private final HistoryFileIo historyFileIo = new HistoryFileIo();
@@ -29,7 +33,9 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
 
     private void writeHistoryFile(UserState userState) {
         try {
-            FileOutputStream out = new FileOutputStream(historyFile(userState.user));
+            File file = historyFile(userState.user);
+            log.debug("Writing history file for user `{}' to `{}'", userState.user, file);
+            FileOutputStream out = new FileOutputStream(file);
             historyFileIo.write(userState.encryptedHistoryFile, out);
         } catch (IOException e) {
             throw new RuntimeException("Could not write history file.", e);
@@ -38,7 +44,9 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
 
     private void writeInstructionTable(UserState userState) {
         try {
-            FileOutputStream out = new FileOutputStream(instructionTableFile(userState.user));
+            File file = instructionTableFile(userState.user);
+            log.debug("Writing instruction table for user `{}' to `{}'", userState.user, file);
+            FileOutputStream out = new FileOutputStream(file);
             instructionTableIo.write(userState.instructionTable, out);
         } catch (IOException e) {
             throw new RuntimeException("Could not write instruction table.", e);
@@ -49,9 +57,12 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
     public UserState read(User user) {
         InstructionTable instructionTable;
         try {
-            FileInputStream in = new FileInputStream(instructionTableFile(user));
+            File file = instructionTableFile(user);
+            log.debug("Reading instruction table for user `{}' from `{}'", user, file);
+            FileInputStream in = new FileInputStream(file);
             instructionTable = instructionTableIo.read(in);
         } catch (FileNotFoundException e) {
+            log.debug("No instruction table found for user `{}'", user);
             return null; // user doesn't exist
         } catch (IOException e) {
             throw new RuntimeException("Could not read instruction table.");
@@ -59,7 +70,9 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
 
         EncryptedHistoryFile encryptedHistoryFile;
         try {
-            FileInputStream in = new FileInputStream(historyFile(user));
+            File file = historyFile(user);
+            log.debug("Reading history file for user `{}' from `{}'", user, file);
+            FileInputStream in = new FileInputStream(file);
             encryptedHistoryFile = historyFileIo.read(in);
         } catch (IOException e) {
             throw new RuntimeException("Could not read instruction table.", e);

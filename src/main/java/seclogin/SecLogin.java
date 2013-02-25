@@ -1,6 +1,8 @@
 package seclogin;
 
 import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import seclogin.crypto.Aes128Cbc;
 import seclogin.crypto.BlockCipher;
 import seclogin.historyfile.EncryptedHistoryFile;
@@ -10,6 +12,7 @@ import seclogin.historyfile.HistoryFileParams;
 import seclogin.instructiontable.Distinguishment;
 import seclogin.instructiontable.InstructionTable;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -17,6 +20,8 @@ import static com.google.common.base.Preconditions.checkState;
 
 /** The entry point to SecLogin. */
 public class SecLogin {
+
+    private static final Logger log = LoggerFactory.getLogger(SecLogin.class);
 
     private final UserInterface userInterface;
     private final UserStatePersistence userStatePersistence;
@@ -44,8 +49,7 @@ public class SecLogin {
 
         BlockCipher cipher = new Aes128Cbc();
         historyFileCipher = new HistoryFileCipher(cipher);
-        authenticator = new Authenticator(random, measurementParams, historyFileCipher
-        );
+        authenticator = new Authenticator(random, measurementParams, historyFileCipher);
     }
 
     public void prompt() {
@@ -63,6 +67,7 @@ public class SecLogin {
         boolean loginCorrect = userState != null;
 
         if (loginCorrect) {
+            log.debug("Writing new instruction table and updated history file");
             userStatePersistence.write(userState);
         }
 
@@ -88,6 +93,7 @@ public class SecLogin {
         for (Question question : questionBank) {
             measurements[i++] = askQuestion(question);
         }
+        log.debug("Collected measurements = {}", Arrays.toString(measurements));
         return measurements;
     }
 
@@ -107,15 +113,25 @@ public class SecLogin {
 
     public void addUser(String user) {
         Password password = askPassword();
+
+        log.debug("Adding user `{}'", user);
         UserState userState = generateNewUserState(new User(user), password);
+
+        log.debug("Writing new instruction table and empty history file");
         userStatePersistence.write(userState);
     }
 
     private UserState generateNewUserState(User user, Password password) {
+        log.debug("Generating instruction table with no distinguishing features");
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
                 InstructionTable.generate(password, new Distinguishment[measurementParams.length], random);
+
+        log.debug("Creating empty history file of size = {}", historyFileParams.maxNrOfMeasurements);
         HistoryFile emptyHistoryFile = HistoryFile.emptyHistoryFile(user, historyFileParams);
+
+        log.debug("Encrypting history file");
         EncryptedHistoryFile encryptedHistoryFile = historyFileCipher.encrypt(emptyHistoryFile, tableAndHpwd.hpwd);
+
         return new UserState(user, tableAndHpwd.table, encryptedHistoryFile);
     }
 

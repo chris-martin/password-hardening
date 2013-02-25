@@ -31,6 +31,6 @@ public class DistinguishmentPolicyTest {
                 BETA
         };
 
-        Assert.assertArrayEquals(expected, policy.measurmentDistinguishment(measurements));
+        Assert.assertArrayEquals(expected, policy.measurementDistinguishment(measurements));
     }
 }
