@@ -98,6 +98,7 @@ public class HistoryFile {
                     stat.addValue(featureMeasurement);
                 }
             }
+            checkState(stat.getN() <= measurements.length);
             double missingValuesPercentage = (measurements.length - (int) stat.getN()) / (double) measurements.length;
             stats[i] = new MeasurementStats(stat.getMean(), stat.getStandardDeviation(), missingValuesPercentage);
         }
