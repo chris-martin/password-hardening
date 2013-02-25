@@ -305,4 +305,36 @@ public class SecLoginIntegrationTest {
 
     }
 
+    @Test
+    public void test_close_to_system_mean() throws Exception {
+
+        System.out.println("test_close_to_system_mean");
+
+        Question question = new Question("Question A", new MeasurementParams(50, 2));
+        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .51);
+
+        passwordIs("password");
+        userIs("steve");
+
+        // Add one user, and the system prompts for a password.
+        secLogin.addUser("steve");
+        expect(PasswordPrompt, Done);
+
+        answerIs(question, "49.8");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+        answerIs(question, "47");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+        // Answer above, which succeeds because the previous answers below were not
+        // far enough below to be distinguishing.
+        answerIs(question, "99");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+    }
+
 }
