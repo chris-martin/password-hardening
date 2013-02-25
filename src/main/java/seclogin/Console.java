@@ -37,11 +37,14 @@ public class Console {
         boolean verbose = ns.getBoolean("verbose");
 
         Random random = new SecureRandom();
+        int historyFileSize = 2;
         SecLogin secLogin = new SecLogin(
             new ConsoleUI(),
             new UserStateFilesystemPersistence(),
             random,
-            QuestionBank.createDefault()
+            QuestionBank.createDefault(),
+            historyFileSize,
+            0.51
         );
 
         try {
