@@ -45,7 +45,29 @@ public class HistoryFileTest {
 
     @Test
     public void testWithMostRecentMeasurements() throws Exception {
-        // TODO
+        HistoryFile empty = HistoryFile.emptyHistoryFile(new User("asdf"), params);
+        double[] measurements = new double[params.nrOfFeatures];
+        for (int i = 0; i < measurements.length; i++) {
+            measurements[i] = random.nextInt(20);
+        }
+        HistoryFile withMeasurements = empty.withMostRecentMeasurements(measurements);
+
+        double[][] expectedMeasurements = new double[params.maxNrOfMeasurements][params.nrOfFeatures];
+        for (double[] expectedMeasurement : expectedMeasurements) {
+            Arrays.fill(expectedMeasurement, Double.NaN);
+        }
+        expectedMeasurements[0] = measurements;
+        Assert.assertArrayEquals(expectedMeasurements, withMeasurements.measurements);
+
+
+        double[] moreMeasurements = new double[params.nrOfFeatures];
+        for (int i = 0; i < moreMeasurements.length; i++) {
+            moreMeasurements[i] = random.nextInt(20);
+        }
+        withMeasurements = withMeasurements.withMostRecentMeasurements(moreMeasurements);
+        expectedMeasurements[0] = moreMeasurements;
+        expectedMeasurements[1] = measurements;
+        Assert.assertArrayEquals(expectedMeasurements, withMeasurements.measurements);
     }
 
     @Test
