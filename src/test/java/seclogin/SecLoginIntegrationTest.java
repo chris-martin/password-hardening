@@ -148,8 +148,47 @@ public class SecLoginIntegrationTest {
 
     }
 
+    /**
+     * Demonstrates that a distinguished feature must be correct for login.
+     */
     @Test
     public void test_feature_correctness() throws Exception {
+
+        Question question = new Question("Question A", new MeasurementParams(50, 2));
+        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, .99);
+
+        passwordIs("password");
+        userIs("steve");
+        answerIs(question, "20");
+
+        // Add one user, and the system prompts for a password.
+        secLogin.addUser("steve");
+        expect(PasswordPrompt, Done);
+
+        // Log in with correct password twice, establishing the feature as distinguished
+        for (int i = 0; i < 2; i++) {
+            secLogin.prompt();
+            expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+        }
+
+        // Using a slightly different answer should be okay, and the feature is still distinguished.
+        answerIs(question, "21.2");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+        // Using a radically different answer should fail.
+        answerIs(question, "51");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Failure, Done);
+
+    }
+
+    /**
+     * Demonstrates that a distinguished feature may become an undistinguished feature.
+     */
+    @Test
+    public void test_feature_undistinguishment() throws Exception {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
@@ -169,15 +208,17 @@ public class SecLoginIntegrationTest {
             expect(UserPrompt, PasswordPrompt, questions, Success, Done);
         }
 
-        // Using a slightly different answer should be okay.
-        answerIs(question, "21.2");
+        // This answer is rather different from the first two, but succeeds because it is
+        // on the correct side of 50.
+        answerIs(question, "49");
         secLogin.prompt();
         expect(UserPrompt, PasswordPrompt, questions, Success, Done);
 
-        // Using a radically different answer should fail.
+        // The previous login radically increases the user's standard deviation, so now the
+        // feature is non-distinguishing, and any value works.
         answerIs(question, "99");
         secLogin.prompt();
-        expect(UserPrompt, PasswordPrompt, questions, Failure, Done);
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
 
     }
 
