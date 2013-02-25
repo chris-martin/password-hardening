@@ -14,18 +14,12 @@ import java.io.IOException;
 
 public class UserStateFilesystemPersistence implements UserStatePersistence {
 
+    private final File dir;
     private final HistoryFileIo historyFileIo = new HistoryFileIo();
     private final InstructionTableIo instructionTableIo = new InstructionTableIo();
 
-    /** The directory in which to store user history files and instruction tables. */
-    private File userStateDir() {
-        File file = new File(".seclogin");
-        if (!file.exists()) {
-            if (!file.mkdirs()) {
-                throw new RuntimeException("Could not create directory " + file.getAbsolutePath());
-            }
-        }
-        return file;
+    public UserStateFilesystemPersistence(File dir) {
+        this.dir = dir;
     }
 
     public void write(UserState userState) {
@@ -75,11 +69,11 @@ public class UserStateFilesystemPersistence implements UserStatePersistence {
     }
 
     private File instructionTableFile(User user) {
-        return new File(userStateDir(), "instruction-table-" + user.user);
+        return new File(dir, "instruction-table-" + user.user);
     }
 
     private File historyFile(User user) {
-        return new File(userStateDir(), "history-file-" + user.user);
+        return new File(dir, "history-file-" + user.user);
     }
 
 }
