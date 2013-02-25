@@ -12,6 +12,9 @@ import seclogin.instructiontable.InstructionTable;
 
 import java.util.Random;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+
 /** The entry point to SecLogin. */
 public class SecLogin {
 
@@ -26,13 +29,16 @@ public class SecLogin {
 
     public SecLogin(UserInterface userInterface, UserStatePersistence userStatePersistence,
                     Random random, QuestionBank questionBank) {
-
         this.userInterface = userInterface;
         this.userStatePersistence = userStatePersistence;
         this.random = random;
+
         this.questionBank = questionBank;
+        checkArgument(questionBank.nrOfQuestions() > 0);
         measurementParams = questionBank.measurementParams();
         int nrOfFeatures = measurementParams.length;
+        checkState(nrOfFeatures == questionBank.nrOfQuestions());
+
         int historyFileSize = 2;
         historyFileParams = new HistoryFileParams(historyFileSize, nrOfFeatures);
 
