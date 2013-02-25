@@ -60,7 +60,6 @@ public class SecLogin {
         }
 
         userInterface.tell(loginCorrect ? UserInterface.Success : UserInterface.Failure);
-        userInterface.tell("");
     }
 
     private User askUser() {
