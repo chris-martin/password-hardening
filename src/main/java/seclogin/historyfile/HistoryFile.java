@@ -22,19 +22,15 @@ public class HistoryFile {
     static final HashFunction USER_HASH_FN = Hashing.sha256();
 
     final byte[] userHash;
-    final int nrOfMeasurements;
     final double[][] measurements;
 
-    HistoryFile(byte[] userHash, int nrOfMeasurements, double[][] measurements) {
+    HistoryFile(byte[] userHash, double[][] measurements) {
         checkNotNull(userHash);
-        checkArgument(userHash.length == USER_HASH_FN.bits()/Byte.SIZE);
-        checkNotNull(nrOfMeasurements);
+        checkArgument(userHash.length == USER_HASH_FN.bits() / Byte.SIZE);
         checkNotNull(measurements);
         checkArgument(measurements.length > 0);
-        checkArgument(nrOfMeasurements <= measurements.length);
 
         this.userHash = userHash;
-        this.nrOfMeasurements = nrOfMeasurements;
         this.measurements = measurements;
     }
 
@@ -48,7 +44,7 @@ public class HistoryFile {
         for (double[] measurement : measurements) {
             Arrays.fill(measurement, Double.NaN);
         }
-        return new HistoryFile(userHash, 0, measurements);
+        return new HistoryFile(userHash, measurements);
     }
 
     /** Returns whether this history file's user hash matches that of the given user. */
@@ -69,7 +65,7 @@ public class HistoryFile {
         double[][] shiftedMeasurements = new double[measurements.length][];
         shiftedMeasurements[0] = mostRecentMeasurements;
         System.arraycopy(measurements, 0, shiftedMeasurements, 1, shiftedMeasurements.length - 1);
-        return new HistoryFile(userHash, Math.min(measurements.length, nrOfMeasurements + 1), shiftedMeasurements);
+        return new HistoryFile(userHash, shiftedMeasurements);
     }
 
     /**
@@ -77,7 +73,7 @@ public class HistoryFile {
      * enough entries in the table will be null. If the file is not yet full, i.e., if the user has not successfully
      * logged in at least as many times as measurements can fit in this history file, then all features will have
      * null stats. If the file is full, but for a particular feature the user did not supply a measurement on
-     * more than half of the entries in the history file, the stats for that feature will be null.
+     * all of the entries in the history file, the stats for that feature will be null.
      */
     public MeasurementStats[] calculateStats() {
         checkState(measurements.length > 0);
@@ -85,22 +81,20 @@ public class HistoryFile {
         int nrOfFeatures = measurements[0].length;
         MeasurementStats[] stats = new MeasurementStats[nrOfFeatures];
 
-        if (nrOfMeasurements != measurements.length) {
-            return stats; // the history file isn't full yet
-        }
-
         for (int i = 0; i < stats.length; i++) {
             SummaryStatistics stat = new SummaryStatistics();
             for (double[] measurement : measurements) {
                 checkState(measurement.length == nrOfFeatures);
                 double featureMeasurement = measurement[i];
-                if (!Double.isNaN(featureMeasurement)) {
-                    stat.addValue(featureMeasurement);
+                if (Double.isNaN(featureMeasurement)) {
+                    break; // the history file isn't full for this feature, so go no further
                 }
+                stat.addValue(featureMeasurement);
             }
             checkState(stat.getN() <= measurements.length);
-            double missingValuesPercentage = (measurements.length - (int) stat.getN()) / (double) measurements.length;
-            stats[i] = new MeasurementStats(stat.getMean(), stat.getStandardDeviation(), missingValuesPercentage);
+            if (stat.getN() == measurements.length) {
+                stats[i] = new MeasurementStats(stat.getMean(), stat.getStandardDeviation());
+            }
         }
         return stats;
     }
@@ -112,7 +106,6 @@ public class HistoryFile {
 
         HistoryFile that = (HistoryFile) o;
 
-        if (nrOfMeasurements != that.nrOfMeasurements) return false;
         if (!Arrays.equals(userHash, that.userHash)) return false;
         if (!Arrays.deepEquals(measurements, that.measurements)) return false;
 
@@ -122,7 +115,6 @@ public class HistoryFile {
     @Override
     public int hashCode() {
         int result = Arrays.hashCode(userHash);
-        result = 31 * result + nrOfMeasurements;
         result = 31 * result + Arrays.deepHashCode(measurements);
         return result;
     }
@@ -131,7 +123,6 @@ public class HistoryFile {
     public String toString() {
         return "HistoryFile{" +
                 "userHash=" + BaseEncoding.base16().lowerCase().encode(userHash) +
-                ", nrOfMeasurements=" + nrOfMeasurements +
                 ", measurements=" + Arrays.deepToString(measurements) +
                 '}';
     }

@@ -43,8 +43,7 @@ public class Console {
             new UserStateFilesystemPersistence(),
             random,
             QuestionBank.createDefault(),
-            historyFileSize,
-            0.51
+            historyFileSize
         );
 
         try {

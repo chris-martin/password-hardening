@@ -17,19 +17,12 @@ import static seclogin.instructiontable.Distinguishment.BETA;
 public class DistinguishmentPolicy {
 
     private final MeasurementParams[] measurementParams;
-    private final double declinedMeasurementNonDistinguishmentThreshold;
 
     /**
-     * @param measurementParams
-     *        system-wide feature parameters
-     * @param declinedMeasurementNonDistinguishmentThreshold
-     *        if the user declines to answer a particular question more than this percentage of the time,
-     *        that question will be considered non-distinguishing.
+     * @param measurementParams system-wide feature parameters
      */
-    public DistinguishmentPolicy(MeasurementParams[] measurementParams,
-                                 double declinedMeasurementNonDistinguishmentThreshold) {
+    public DistinguishmentPolicy(MeasurementParams[] measurementParams) {
         this.measurementParams = measurementParams;
-        this.declinedMeasurementNonDistinguishmentThreshold = declinedMeasurementNonDistinguishmentThreshold;
     }
 
     /**
@@ -54,7 +47,7 @@ public class DistinguishmentPolicy {
      * parameter for that feature.
      */
     protected Distinguishment measurementDistinguishment(double measurement, MeasurementParams params) {
-        return measurement < params.responseMean() ? ALPHA : BETA;
+        return measurement < params.responseMean ? ALPHA : BETA;
     }
 
     /**
@@ -86,12 +79,8 @@ public class DistinguishmentPolicy {
             return null; // no user stats for feature, so feature is not distinguishing
         }
 
-        if (stats.missingValuesPercentage > declinedMeasurementNonDistinguishmentThreshold) {
-            return null; // the user declined to answer too often for the feature to be distinguishing
-        }
-
-        if (Math.abs(stats.mean - params.responseMean()) > (stats.stDev * params.stDevMultiplier())) {
-            return stats.mean < params.responseMean() ? ALPHA : BETA;
+        if (Math.abs(stats.mean - params.responseMean) > (stats.stDev * params.stDevMultiplier)) {
+            return stats.mean < params.responseMean ? ALPHA : BETA;
         }
         return null;
     }

@@ -35,9 +35,6 @@ class HistoryFileSerialization {
         ByteBuffer.wrap(plaintext, offset, INT_SIZE_IN_BYTES).putInt(nrOfFeatures);
         offset += INT_SIZE_IN_BYTES;
 
-        ByteBuffer.wrap(plaintext, offset, INT_SIZE_IN_BYTES).putInt(historyFile.nrOfMeasurements);
-        offset += INT_SIZE_IN_BYTES;
-
         double[][] measurements = historyFile.measurements;
         for (int j = 0; j < measurements.length; j++) {
             checkState(measurements[j].length == nrOfFeatures);
@@ -54,7 +51,7 @@ class HistoryFileSerialization {
     /** Returns the total number of bytes needed to serialize this history file. */
     private int sizeInBytes(HistoryFile historyFile) {
         return (HistoryFile.USER_HASH_FN.bits() / Byte.SIZE) +
-                (3 * INT_SIZE_IN_BYTES) +
+                (2 * INT_SIZE_IN_BYTES) +
                 (historyFile.measurements.length * historyFile.measurements[0].length * DOUBLE_SIZE_IN_BYTES);
     }
 
@@ -72,9 +69,6 @@ class HistoryFileSerialization {
         int nrOfFeatures = ByteBuffer.wrap(plaintext, offset, INT_SIZE_IN_BYTES).getInt();
         offset += INT_SIZE_IN_BYTES;
 
-        int nrOfMeasurements = ByteBuffer.wrap(plaintext, offset, INT_SIZE_IN_BYTES).getInt();
-        offset += INT_SIZE_IN_BYTES;
-
         double[][] measurements = new double[maxNrOfMeasurements][nrOfFeatures];
         for (int j = 0; j < measurements.length; j++) {
             for (int i = 0; i < measurements[j].length; i++) {
@@ -83,6 +77,6 @@ class HistoryFileSerialization {
             }
         }
 
-        return new HistoryFile(userHash, nrOfMeasurements, measurements);
+        return new HistoryFile(userHash, measurements);
     }
 }

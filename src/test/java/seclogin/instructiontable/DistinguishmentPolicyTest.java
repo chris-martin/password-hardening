@@ -17,7 +17,7 @@ public class DistinguishmentPolicyTest {
                 new MeasurementParams(10.0, 2.0),
                 new MeasurementParams(10.0, 2.0)
         };
-        DistinguishmentPolicy policy = new DistinguishmentPolicy(measurementParams, Double.NaN);
+        DistinguishmentPolicy policy = new DistinguishmentPolicy(measurementParams);
 
         double[] measurements = new double[] {
                 9.9999, // expect alpha

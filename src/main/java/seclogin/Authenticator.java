@@ -22,13 +22,12 @@ public class Authenticator {
     public Authenticator(
             Random random,
             MeasurementParams[] measurementParams,
-            HistoryFileCipher historyFileCipher,
-            double declinedMeasurementNonDistinguishmentThreshold) {
+            HistoryFileCipher historyFileCipher) {
 
         this.random = random;
         this.historyFileCipher = historyFileCipher;
         distinguishmentPolicy =
-                new DistinguishmentPolicy(measurementParams, declinedMeasurementNonDistinguishmentThreshold);
+                new DistinguishmentPolicy(measurementParams);
     }
 
     /**

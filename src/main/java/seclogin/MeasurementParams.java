@@ -7,9 +7,9 @@ package seclogin;
  */
 public class MeasurementParams {
 
-    private final double responseMean;
+    public final double responseMean;
 
-    private final double stDevMultiplier;
+    public final double stDevMultiplier;
 
     /**
      * @param responseMean response mean
@@ -18,14 +18,6 @@ public class MeasurementParams {
     public MeasurementParams(double responseMean, double stDevMultiplier) {
         this.responseMean = responseMean;
         this.stDevMultiplier = stDevMultiplier;
-    }
-
-    public double responseMean() {
-        return responseMean;
-    }
-
-    public double stDevMultiplier() {
-        return stDevMultiplier;
     }
 
 }

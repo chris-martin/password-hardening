@@ -26,9 +26,6 @@ public class HistoryFileTest {
     @Test
     public void testEmptyHistoryFile() throws Exception {
         HistoryFile empty = HistoryFile.emptyHistoryFile(new User("asdf"), params);
-
-        Assert.assertEquals(0, empty.nrOfMeasurements);
-
         double[][] expectedMeasurements = new double[params.maxNrOfMeasurements][params.nrOfFeatures];
         for (double[] expectedMeasurement : expectedMeasurements) {
             Arrays.fill(expectedMeasurement, Double.NaN);
@@ -73,16 +70,17 @@ public class HistoryFileTest {
 
     @Test
     public void testCalculateStats() throws Exception {
-        HistoryFile file = HistoryFile.emptyHistoryFile(new User("asdf"), new HistoryFileParams(4, 2));
-        file = file.withMostRecentMeasurements(new double[]{1.0, 10.0});
-        file = file.withMostRecentMeasurements(new double[]{2.0, Double.NaN});
-        file = file.withMostRecentMeasurements(new double[]{Double.NaN, 20.0});
-        file = file.withMostRecentMeasurements(new double[]{6.0, 60.0});
+        HistoryFile file = HistoryFile.emptyHistoryFile(new User("asdf"), new HistoryFileParams(4, 3));
+        file = file.withMostRecentMeasurements(new double[]{1.0, 1.0, 1.0});
+        file = file.withMostRecentMeasurements(new double[]{2.0, Double.NaN, 10.0});
+        file = file.withMostRecentMeasurements(new double[]{Double.NaN, 6.0, 19.0});
+        file = file.withMostRecentMeasurements(new double[]{6.0, 11.0, 28.0});
 
         MeasurementStats[] stats = file.calculateStats();
         MeasurementStats[] expectedStats = new MeasurementStats[]{
-                new MeasurementStats(9.0/3.0, Math.sqrt(7), 1.0/4.0),
-                new MeasurementStats(90.0/3.0, Math.sqrt(700), 1.0/4.0)
+                null,
+                null,
+                new MeasurementStats(58.0/4.0, Math.sqrt(135.0)),
         };
         Assert.assertArrayEquals(expectedStats, stats);
     }

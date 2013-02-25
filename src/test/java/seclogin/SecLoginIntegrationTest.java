@@ -12,8 +12,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static org.mockito.Mockito.*;
-import static seclogin.SecLoginIntegrationTest.Expectation.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.when;
+import static seclogin.SecLoginIntegrationTest.Expectation.Done;
+import static seclogin.SecLoginIntegrationTest.Expectation.Failure;
+import static seclogin.SecLoginIntegrationTest.Expectation.PasswordPrompt;
+import static seclogin.SecLoginIntegrationTest.Expectation.Success;
+import static seclogin.SecLoginIntegrationTest.Expectation.UserPrompt;
 
 public class SecLoginIntegrationTest {
 
@@ -129,7 +134,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, .99);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1);
 
         passwordIs("password");
         userIs("steve");
@@ -160,7 +165,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, .99);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1);
 
         passwordIs("password");
         userIs("steve");
@@ -198,7 +203,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .99);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2);
 
         passwordIs("password");
         userIs("steve");
@@ -237,7 +242,7 @@ public class SecLoginIntegrationTest {
         Question questionB = new Question("Question B", new MeasurementParams(500, 2));
         Question questionC = new Question("Question C", new MeasurementParams(5000, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(questionA, questionB, questionC));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .49);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2);
 
         passwordIs("password");
         userIs("steve");
@@ -268,17 +273,16 @@ public class SecLoginIntegrationTest {
 
     }
 
-    /**
-     * Uses a 2-entry history file that allows a feature to be distinguishing with only one entry.
-     */
     @Test
     public void test_unanswered_question() throws Exception {
 
         System.out.println("test_unanswered_question");
 
-        Question question = new Question("Question A", new MeasurementParams(50, 2));
-        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .51);
+        // questions A and B have same params
+        Question questionA = new Question("Question A", new MeasurementParams(50, 2));
+        Question questionB = new Question("Question B", new MeasurementParams(50, 2));
+        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(questionA, questionB));
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2);
 
         passwordIs("password");
         userIs("steve");
@@ -287,21 +291,30 @@ public class SecLoginIntegrationTest {
         secLogin.addUser("steve");
         expect(PasswordPrompt, Done);
 
-        // Don't answer the first time
-        answerIs(question, "");
+        // Don't answer A the first time
+        answerIs(questionA, "");
+        answerIs(questionB, "3");
         secLogin.prompt();
         expect(UserPrompt, PasswordPrompt, questions, Success, Done);
 
-        // Answer this time, distinguishing below
-        answerIs(question, "4");
+        // Answer this time, distinguishing B below, but not A since there's only one answer for A
+        answerIs(questionA, "4");
+        answerIs(questionB, "4");
         secLogin.prompt();
         expect(UserPrompt, PasswordPrompt, questions, Success, Done);
 
-        // Answer above, which fails because this configuration allows distinguishment
-        // even with only a single response.
-        answerIs(question, "51");
+        // Answer A and B above, which fails because B is distinguishing
+        answerIs(questionA, "51");
+        answerIs(questionB, "51");
         secLogin.prompt();
         expect(UserPrompt, PasswordPrompt, questions, Failure, Done);
+
+        // Answer A above but B below, which succeeds because A isn't distinguishing
+        // with only a single response.
+        answerIs(questionA, "51");
+        answerIs(questionB, "49");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
 
     }
 
@@ -312,7 +325,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .51);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2);
 
         passwordIs("password");
         userIs("steve");
