@@ -3,6 +3,7 @@ package seclogin.historyfile;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import seclogin.MeasurementStats;
 import seclogin.TestRandom;
 import seclogin.User;
 
@@ -72,6 +73,18 @@ public class HistoryFileTest {
 
     @Test
     public void testCalculateStats() throws Exception {
-        // TODO
+        HistoryFile file = HistoryFile.emptyHistoryFile(new User("asdf"), new HistoryFileParams(4, 2));
+        file = file.withMostRecentMeasurements(new double[]{1.0, 10.0});
+        file = file.withMostRecentMeasurements(new double[]{2.0, Double.NaN});
+        file = file.withMostRecentMeasurements(new double[]{Double.NaN, 20.0});
+        file = file.withMostRecentMeasurements(new double[]{6.0, 60.0});
+        System.out.println("asdfasfd " + file.nrOfMeasurements);
+
+        MeasurementStats[] stats = file.calculateStats();
+        MeasurementStats[] expectedStats = new MeasurementStats[]{
+                new MeasurementStats(9.0/3.0, Math.sqrt((4.0 + 1.0 + 9.0)/3.0), 1.0/4.0),
+                new MeasurementStats(90.0/3.0, Math.sqrt((400.0 + 100.0 + 900.0)/3.0), 1.0/4.0)
+        };
+        Assert.assertArrayEquals(expectedStats, stats);
     }
 }
