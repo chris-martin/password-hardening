@@ -23,10 +23,10 @@ To run, use the provided `seclogin.sh` Bash script from the directory in which i
 The first time you run `seclogin.sh`, it will automatically build SecLogin (target/seclogin.jar).
 
 To create a user:
- $ ./seclogin.sh -a usernamehere
+    $ ./seclogin.sh -a usernamehere
 
 To log in:
- $ ./seclogin.sh
+    $ ./seclogin.sh
 
 Dependencies
 ------------
