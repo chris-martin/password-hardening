@@ -1,17 +1,29 @@
-REQUIREMENTS
-============
+SecLogin
+========
+
+Authors
+-------
+
+- Kelsey Francis     francis@gatech.edu
+
+- Chris Martin       chris.martin@gatech.edu
+
+Requirements
+------------
+
 - Java 6 or greater (tested with Java 7 update 13)
+
 - Linux (tested on Fedora Core 18)
 
-BUILD
-=====
-Extract the archive. From the the directory where extracted:
-$ ./seclogin.sh
+Usage
+-----
 
-RUN
-===
+To run, use the provided `seclogin.sh` Bash script from the directory in which it resides.
+
+The first time you run `seclogin.sh`, it will automatically build SecLogin (target/seclogin.jar).
+
 To create a user:
 $ ./seclogin.sh -a usernamehere
 
-To login:
+To log in:
 $ ./seclogin.sh
