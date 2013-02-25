@@ -99,6 +99,10 @@ public class SecLoginIntegrationTest {
             }
         } else if (o instanceof Question) {
             expectQuestionPrompt((Question) o);
+        } else if (o instanceof QuestionBank) {
+            for (Question q : ((QuestionBank) o).getQuestions()) {
+                expectQuestionPrompt(q);
+            }
         }
     }
 
@@ -107,35 +111,10 @@ public class SecLoginIntegrationTest {
     }
 
     /**
-     * Demonstrates how a setup without any questions behaves just like a normal password
-     * system with no hardening.
+     * Demonstrates that a correct password is required to log in.
      */
     @Test
-    public void test_with_no_questions() throws Exception {
-
-        QuestionBank questions = new QuestionBank(Arrays.<Question>asList());
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions);
-
-        passwordIs("password");
-        userIs("steve");
-
-        // We add one user, and the system prompts for a password.
-        secLogin.addUser("steve");
-        expect(PasswordPrompt, Done);
-
-        // Log in with that password successfully.
-        secLogin.prompt();
-        expect(UserPrompt, PasswordPrompt, Success, Done);
-
-        // Try to log in with a different password, and fail.
-        passwordIs("psosarwd");
-        secLogin.prompt();
-        expect(UserPrompt, PasswordPrompt, Failure, Done);
-
-    }
-
-    @Test
-    public void test_with_one_question() throws Exception {
+    public void test_password_correctness() throws Exception {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
@@ -145,12 +124,21 @@ public class SecLoginIntegrationTest {
         userIs("steve");
         answerIs(question, "20");
 
+        // Add one user, and the system prompts for a password.
         secLogin.addUser("steve");
         expect(PasswordPrompt, Done);
 
+        // Log in with correct password
         secLogin.prompt();
-        expect(UserPrompt, PasswordPrompt, question, Success, Done);
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+        // Try to log in with a different password, and fail.
+        passwordIs("psosarwd");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Failure, Done);
 
     }
+
+
 
 }
