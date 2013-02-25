@@ -86,12 +86,12 @@ public class DistinguishmentPolicy {
             return null; // no user stats for feature, so feature is not distinguishing
         }
 
-        if (stats.missingValuesPercentage() > declinedMeasurementNonDistinguishmentThreshold) {
+        if (stats.missingValuesPercentage > declinedMeasurementNonDistinguishmentThreshold) {
             return null; // the user declined to answer too often for the feature to be distinguishing
         }
 
-        if (Math.abs(stats.mean() - params.responseMean()) > (stats.stDev() * params.stDevMultiplier())) {
-            return stats.mean() < params.responseMean() ? ALPHA : BETA;
+        if (Math.abs(stats.mean - params.responseMean()) > (stats.stDev * params.stDevMultiplier())) {
+            return stats.mean < params.responseMean() ? ALPHA : BETA;
         }
         return null;
     }
