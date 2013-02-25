@@ -2,11 +2,8 @@ package seclogin.instructiontable;
 
 import com.google.common.io.BaseEncoding;
 import seclogin.HardenedPassword;
-import seclogin.MeasurementParams;
-import seclogin.MeasurementStats;
 import seclogin.Password;
 import seclogin.SecurityParameters;
-import seclogin.instructiontable.InstructionTable.Entry.Column;
 import seclogin.math.Interpolation;
 import seclogin.math.Mod;
 import seclogin.math.PasswordBasedPRF;
@@ -24,8 +21,9 @@ import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static seclogin.instructiontable.InstructionTable.Entry.Column.ALPHA;
-import static seclogin.instructiontable.InstructionTable.Entry.Column.BETA;
+import static com.google.common.base.Preconditions.checkState;
+import static seclogin.instructiontable.Distinguishment.ALPHA;
+import static seclogin.instructiontable.Distinguishment.BETA;
 
 /**
  * An instruction table that contains values from which the hardened password can be recovered
@@ -51,82 +49,49 @@ public class InstructionTable {
      * Interpolates the hardened password using the (x,y) pairs recovered from the table
      * using the given regular password and measurements.
      */
-    public HardenedPassword interpolateHpwd(Password pwd,
-                                            double[] measurements,
-                                            MeasurementParams[] measurementParams) {
-        List<Point> xys = points(pwd, measurements, measurementParams);
+    public HardenedPassword interpolateHpwd(Password pwd, Distinguishment[] distinguishments) {
+        List<Point> xys = points(pwd, distinguishments);
         return new HardenedPassword(new Interpolation(xys, q).yIntercept());
     }
 
     /**
      * Selects the correct (x,y) pair stored in the table for each feature using the given
-     * measurements and `decrypting` the y value using the given regular password.
+     * distinguishments and `decrypting` the y value using the given regular password.
      */
-    List<Point> points(Password pwd, double[] measurements, MeasurementParams[] measurementParams) {
-        checkNotNull(measurements);
-        checkArgument(measurements.length == table.length);
-        checkNotNull(measurementParams);
-        checkArgument(measurementParams.length == measurements.length);
-
-        Column[] selectedColumns = selectColumn(measurements, measurementParams);
+    List<Point> points(Password pwd, Distinguishment[] distinguishments) {
+        checkState(distinguishments.length == table.length);
 
         PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, q);
         SparsePRP p = new SparsePRP(r, q);
 
         List<Point> points = new ArrayList<Point>();
-        for (int i = 0; i < measurements.length ; i++) {
-            Column selectedColumn = checkNotNull(selectedColumns[i]);
+        for (int i = 0; i < table.length ; i++) {
+            Distinguishment distinguishment = checkNotNull(distinguishments[i]);
 
-            int input = selectedColumn == ALPHA ? (2*i) : ((2*i)+1);
+            int input = distinguishment == ALPHA ? (2*i) : ((2*i)+1);
             BigInteger x = p.apply(input);
-            BigInteger y = table[i].get(selectedColumn).subtract(g.of(input)).mod(q.q);
+            BigInteger y = table[i].get(distinguishment).subtract(g.of(input)).mod(q.q);
 
             points.add(new Point(x, y));
         }
         return points;
     }
 
-    /** Selects the appropriate column from each table entry using the given measurements. */
-    Column[] selectColumn(double[] measurements, MeasurementParams[] measurementParams) {
-        checkNotNull(measurements);
-        checkNotNull(measurementParams);
-        checkArgument(measurements.length == measurementParams.length);
-
-        Column[] selectedColumns = new Column[measurements.length];
-        for (int i = 0; i < measurements.length ; i++) {
-            selectedColumns[i] = measurements[i] < measurementParams[i].responseMean() ? ALPHA : BETA;
-        }
-        return selectedColumns;
-    }
-
-    /**
-     * Generates an instruction table where no features are distinguishing and
-     * corresponding hardened password using the given regular password.
-     */
-    public static InstructionTableAndHardenedPassword generate(Password pwd,
-                                                               MeasurementParams[] measurementParams,
-                                                               Random random) {
-        return generate(pwd, measurementParams, new MeasurementStats[measurementParams.length], random);
-    }
-
     /**
      * Generates an instruction table and corresponding hardened password using the
-     * given regular password and measurement statistics particular to the user. If
-     * no measurement stats are given for a particular feature, the user is
-     * considered to be not distinguished by that feature.
+     * given regular password and given feature distinguishments for the user.
      */
     public static InstructionTableAndHardenedPassword generate(Password pwd,
-                                                               MeasurementParams[] measurementParams,
-                                                               MeasurementStats[] measurementStats,
+                                                               Distinguishment[] distinguishments,
                                                                Random random) {
-        checkNotNull(measurementParams);
-        checkNotNull(measurementStats);
-        checkArgument(measurementStats.length == measurementParams.length);
+        checkNotNull(pwd);
+        checkNotNull(distinguishments);
+        checkNotNull(random);
 
         Mod q = new Mod(BigInteger.probablePrime(SecurityParameters.Q_LEN, random));
         RandomBigIntModQ randomBigIntModQ = new RandomBigIntModQ(random, q);
 
-        Polynomial f = new RandomPolynomial(randomBigIntModQ).nextPolynomial(measurementParams.length);
+        Polynomial f = new RandomPolynomial(randomBigIntModQ).nextPolynomial(distinguishments.length);
 
         HardenedPassword hpwd = new HardenedPassword(f.apply(BigInteger.ZERO));
 
@@ -136,26 +101,20 @@ public class InstructionTable {
         PasswordBasedPRF g = PasswordBasedPRF.forSaltedPassword(r, pwd, q);
         SparsePRP p = new SparsePRP(r, q);
 
-        Entry[] table = new Entry[measurementParams.length];
+        Entry[] table = new Entry[distinguishments.length];
         for (int i = 0; i < table.length; i++) {
-            // calculate `good' values for both alpha and beta
+            Distinguishment distinguishment = distinguishments[i];
+
             BigInteger y0 = f.apply(p.apply(2*i));
             BigInteger alpha = y0.add(g.of(2*i)).mod(q.q);
+            if (distinguishment == BETA) {
+                alpha = randomBigIntModQ.nextBigIntegerModQNotEqualTo(alpha);
+            }
 
             BigInteger y1 = f.apply(p.apply((2*i)+1));
             BigInteger beta = y1.add(g.of((2*i)+1)).mod(q.q);
-
-            MeasurementParams system = measurementParams[i];
-            MeasurementStats user = measurementStats[i];
-            if (user != null) { // this feature might be distinguishing
-                // if this feature is distinguishing for the user, make only one of alpha or beta `good'
-                if (Math.abs(user.mean() - system.responseMean()) > (user.stDev() * system.stDevMultiplier())) {
-                    if (user.mean() < system.responseMean()) { // alpha is `good'
-                        beta = randomBigIntModQ.nextBigIntegerModQNotEqualTo(beta);
-                    } else { // beta is `good'
-                        alpha = randomBigIntModQ.nextBigIntegerModQNotEqualTo(alpha);
-                    }
-                }
+            if (distinguishment == ALPHA) {
+                beta = randomBigIntModQ.nextBigIntegerModQNotEqualTo(beta);
             }
 
             table[i] = new Entry(alpha, beta);
@@ -185,12 +144,11 @@ public class InstructionTable {
             this.beta = beta;
         }
 
-        BigInteger get(Column column) {
-            checkNotNull(column);
-            return column == ALPHA ? alpha : beta;
+        /** Gets the entry value for the given distinguishment */
+        BigInteger get(Distinguishment distinguishment) {
+            checkNotNull(distinguishment);
+            return distinguishment == ALPHA ? alpha : beta;
         }
-
-        enum Column { ALPHA, BETA }
 
         @Override
         public boolean equals(Object o) {
