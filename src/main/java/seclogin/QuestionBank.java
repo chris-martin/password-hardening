@@ -10,12 +10,12 @@ public class QuestionBank implements Iterable<Question> {
 
     private final List<Question> questions;
 
-    public QuestionBank(List<Question> questions) {
+    public QuestionBank(Iterable<Question> questions) {
         this.questions = ImmutableList.copyOf(questions);
     }
 
-    public List<Question> getQuestions() {
-        return questions;
+    public int nrOfQuestions() {
+        return questions.size();
     }
 
     public MeasurementParams[] measurementParams() {

@@ -100,7 +100,7 @@ public class SecLoginIntegrationTest {
         } else if (o instanceof Question) {
             expectQuestionPrompt((Question) o);
         } else if (o instanceof QuestionBank) {
-            for (Question q : ((QuestionBank) o).getQuestions()) {
+            for (Question q : ((QuestionBank) o)) {
                 expectQuestionPrompt(q);
             }
         }
