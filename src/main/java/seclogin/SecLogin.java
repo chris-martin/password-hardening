@@ -7,6 +7,7 @@ import seclogin.historyfile.EncryptedHistoryFile;
 import seclogin.historyfile.HistoryFile;
 import seclogin.historyfile.HistoryFileCipher;
 import seclogin.historyfile.HistoryFileParams;
+import seclogin.instructiontable.Distinguishment;
 import seclogin.instructiontable.InstructionTable;
 
 import java.util.Random;
@@ -105,7 +106,7 @@ public class SecLogin {
 
     private UserState generateNewUserState(User user, Password password) {
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                InstructionTable.generate(password, measurementParams, random);
+                InstructionTable.generate(password, new Distinguishment[measurementParams.length], random);
         HistoryFile emptyHistoryFile = HistoryFile.emptyHistoryFile(user, historyFileParams);
         EncryptedHistoryFile encryptedHistoryFile = historyFileCipher.encrypt(emptyHistoryFile, tableAndHpwd.hpwd);
         return new UserState(user, tableAndHpwd.table, encryptedHistoryFile);

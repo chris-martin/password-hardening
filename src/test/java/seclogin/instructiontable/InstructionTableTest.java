@@ -4,82 +4,70 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import seclogin.HardenedPassword;
-import seclogin.MeasurementParams;
 import seclogin.Password;
 import seclogin.TestRandom;
 
 import java.util.Random;
 
-import static seclogin.instructiontable.InstructionTable.Entry.Column.ALPHA;
-import static seclogin.instructiontable.InstructionTable.Entry.Column.BETA;
+import static seclogin.instructiontable.Distinguishment.ALPHA;
+import static seclogin.instructiontable.Distinguishment.BETA;
 
 public class InstructionTableTest {
 
     private Random random;
-    private RandomMeasurementParams randomMeasurementParams;
 
     @Before
     public void setUp() throws Exception {
         random = TestRandom.random();
-        randomMeasurementParams = new RandomMeasurementParams(random);
     }
 
     @Test
-    public void testGenerateWithoutStats() throws Exception {
+    public void testGenerate() throws Exception {
         Password pwd = new Password("asdf");
-        MeasurementParams[] measurementParams = randomMeasurementParams.nextMeasurementParams(3);
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                InstructionTable.generate(pwd, measurementParams, random);
+                InstructionTable.generate(pwd, new Distinguishment[3], random);
 
-        Assert.assertEquals(measurementParams.length, tableAndHpwd.table.table.length);
-    }
-
-    @Test
-    public void testSelectColumn() throws Exception {
-        Password pwd = new Password("asdf");
-        MeasurementParams[] measurementParams = new MeasurementParams[]{
-                new MeasurementParams(10.0, 2.0),
-                new MeasurementParams(10.0, 2.0),
-                new MeasurementParams(10.0, 2.0)
-        };
-
-        InstructionTable table = InstructionTable.generate(pwd, measurementParams, random).table;
-
-        double[] measurements = new double[] {
-                9.9999, // expect alpha
-                10.0, // expect beta
-                10.0001 // expect beta
-        };
-
-        InstructionTable.Entry.Column[] expected = new InstructionTable.Entry.Column[] {
-                ALPHA,
-                BETA,
-                BETA
-        };
-
-        Assert.assertArrayEquals(expected, table.selectColumn(measurements, measurementParams));
-
+        Assert.assertEquals(3, tableAndHpwd.table.table.length);
     }
 
     @Test
     public void testInterpolateHpwd() throws Exception {
         Password pwd = new Password("asdf");
-        MeasurementParams[] measurementParams = randomMeasurementParams.nextMeasurementParams(3);
+
+        Distinguishment[] distinguishments = new Distinguishment[]{ ALPHA, null, BETA };
 
         InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(pwd, measurementParams, random);
+            InstructionTable.generate(pwd, distinguishments, random);
 
-        // all alpha and beta are good, so any random measurements should interpolate correct hpwd
-        double[] measurements = new double[measurementParams.length];
-        for (int i = 0; i < measurements.length; i++) {
-            measurements[i] = measurementParams[i].responseMean() + random.nextInt(6) - 3;
-        }
+        // right password, right distinguishments
+        HardenedPassword rightHpwd = tableAndHpwd.table.interpolateHpwd(pwd, new Distinguishment[]{ ALPHA, ALPHA, BETA });
+        Assert.assertEquals(tableAndHpwd.hpwd, rightHpwd);
+        rightHpwd = tableAndHpwd.table.interpolateHpwd(pwd, new Distinguishment[]{ ALPHA, BETA, BETA });
+        Assert.assertEquals(tableAndHpwd.hpwd, rightHpwd);
 
-        HardenedPassword hpwd = tableAndHpwd.table.interpolateHpwd(pwd, measurements, measurementParams);
-        Assert.assertEquals(tableAndHpwd.hpwd, hpwd);
-
+        // wrong password
         Password wrongPwd = new Password("asdg");
-        HardenedPassword wrongHpwd = tableAndHpwd.table.interpolateHpwd(wrongPwd, measurements, measurementParams);
+        HardenedPassword wrongHpwd = tableAndHpwd.table.interpolateHpwd(wrongPwd, new Distinguishment[]{ ALPHA, ALPHA, BETA });
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
+        wrongHpwd = tableAndHpwd.table.interpolateHpwd(wrongPwd, new Distinguishment[]{ ALPHA, BETA, BETA });
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
+
+        // wrong distinguishments
+        wrongHpwd = tableAndHpwd.table.interpolateHpwd(pwd, new Distinguishment[]{ BETA, ALPHA, BETA });
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
+        wrongHpwd = tableAndHpwd.table.interpolateHpwd(pwd, new Distinguishment[]{ ALPHA, ALPHA, ALPHA });
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
+        wrongHpwd = tableAndHpwd.table.interpolateHpwd(pwd, new Distinguishment[]{ BETA, ALPHA, ALPHA });
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
+        wrongHpwd = tableAndHpwd.table.interpolateHpwd(pwd, new Distinguishment[]{ BETA, BETA, BETA });
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
+        wrongHpwd = tableAndHpwd.table.interpolateHpwd(pwd, new Distinguishment[]{ ALPHA, BETA, ALPHA });
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
+        wrongHpwd = tableAndHpwd.table.interpolateHpwd(pwd, new Distinguishment[]{ BETA, BETA, ALPHA });
+        Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
+
+        // wrong password, wrong distinguishments
+        wrongHpwd = tableAndHpwd.table.interpolateHpwd(wrongPwd, new Distinguishment[]{ BETA, BETA, BETA });
         Assert.assertNotEquals(tableAndHpwd.hpwd, wrongHpwd);
     }
 }

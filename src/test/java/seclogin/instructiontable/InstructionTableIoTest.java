@@ -3,7 +3,6 @@ package seclogin.instructiontable;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import seclogin.MeasurementParams;
 import seclogin.Password;
 import seclogin.TestRandom;
 
@@ -22,8 +21,7 @@ public class InstructionTableIoTest {
 
     @Test
     public void measurementParams() throws Exception {
-        MeasurementParams[] measurementParams = new RandomMeasurementParams(random).nextMeasurementParams(3);
-        InstructionTable written = InstructionTable.generate(new Password("asdf"), measurementParams, random).table;
+        InstructionTable written = InstructionTable.generate(new Password("asdf"), new Distinguishment[3], random).table;
 
         InstructionTableIo io = new InstructionTableIo();
 
