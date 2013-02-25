@@ -14,6 +14,16 @@ Requirements
 - Java 6 or greater (tested with Java 7 update 13)
 - Linux (tested on Fedora Core 18)
 
+- The following dependencies are provided with the source or downloaded automatically at
+  compilation time:
+
+    - sbt (for build)
+    - Guava (for general Java utilities)
+    - Argparse4J (for command-line argument parsing)
+    - JLine (for console input)
+    - Commons Math (for statistics)
+    - JSR 305 (for @Nullable annotation)
+
 Usage
 -----
 
@@ -29,8 +39,8 @@ build SecLogin (target/seclogin.jar).
 SecLogin will create a `.seclogin` directory in the directory where you run the it, so your
 user will need permission to do so.
 
-Question Bank
--------------
+Demo Question Setup
+-------------------
 
 For the purposes of demoing SecLogin, it asks the following questions, where t is the system-wide
 response mean parameter:
@@ -40,12 +50,3 @@ response mean parameter:
 
 For flexibility, our implementation supports a distinct k parameter (standard deviation factor)
 for each question, but we use k = 2 for all questions in the demo.
-
-Dependencies
-------------
-- sbt (for build)
-- Guava (for general Java utilities)
-- Argparse4J (for command-line argument parsing)
-- JLine (for console input)
-- Commons Math (for statistics)
-- JSR 305 (for @Nullable annotation)
