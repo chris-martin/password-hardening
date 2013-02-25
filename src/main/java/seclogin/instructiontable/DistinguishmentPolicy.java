@@ -20,10 +20,11 @@ public class DistinguishmentPolicy {
     private final double declinedMeasurementNonDistinguishmentThreshold;
 
     /**
-     * @param measurementParams system-wide feature parameters
+     * @param measurementParams
+     *        system-wide feature parameters
      * @param declinedMeasurementNonDistinguishmentThreshold
-     *        lower bound (exclusive) on the percentage of measurements for a particular feature declined by the user
-     *        at which that feature will be considered non-distinguishing.
+     *        if the user declines to answer a particular question more than this percentage of the time,
+     *        that question will be considered non-distinguishing.
      */
     public DistinguishmentPolicy(MeasurementParams[] measurementParams,
                                  double declinedMeasurementNonDistinguishmentThreshold) {
