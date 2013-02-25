@@ -82,8 +82,8 @@ public class HistoryFileTest {
 
         MeasurementStats[] stats = file.calculateStats();
         MeasurementStats[] expectedStats = new MeasurementStats[]{
-                new MeasurementStats(9.0/3.0, Math.sqrt((4.0 + 1.0 + 9.0)/3.0), 1.0/4.0),
-                new MeasurementStats(90.0/3.0, Math.sqrt((400.0 + 100.0 + 900.0)/3.0), 1.0/4.0)
+                new MeasurementStats(9.0/3.0, Math.sqrt(7), 1.0/4.0),
+                new MeasurementStats(90.0/3.0, Math.sqrt(700), 1.0/4.0)
         };
         Assert.assertArrayEquals(expectedStats, stats);
     }
