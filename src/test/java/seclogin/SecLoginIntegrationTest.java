@@ -268,4 +268,41 @@ public class SecLoginIntegrationTest {
 
     }
 
+    /**
+     * Uses a 2-entry history file that allows a feature to be distinguishing with only one entry.
+     */
+    @Test
+    public void test_unanswered_question() throws Exception {
+
+        System.out.println("test_unanswered_question");
+
+        Question question = new Question("Question A", new MeasurementParams(50, 2));
+        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .51);
+
+        passwordIs("password");
+        userIs("steve");
+
+        // Add one user, and the system prompts for a password.
+        secLogin.addUser("steve");
+        expect(PasswordPrompt, Done);
+
+        // Don't answer the first time
+        answerIs(question, "");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+        // Answer this time, distinguishing below
+        answerIs(question, "4");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+        // Answer above, which fails because this configuration allows distinguishment
+        // even with only a single response.
+        answerIs(question, "51");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Failure, Done);
+
+    }
+
 }
