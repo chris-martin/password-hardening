@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Random;
 
 import static org.mockito.Mockito.*;
+import static seclogin.SecLoginIntegrationTest.Expectation.*;
 
 public class SecLoginIntegrationTest {
 
@@ -83,6 +84,32 @@ public class SecLoginIntegrationTest {
         inOrder.verify(userInterface).tell(UserInterface.Failure);
     }
 
+    public enum Expectation {
+        UserPrompt, PasswordPrompt, Success, Failure, Done
+    }
+
+    void expect(Object o) {
+        if (o instanceof Expectation) {
+            switch ((Expectation) o) {
+                case UserPrompt: expectUserPrompt(); break;
+                case PasswordPrompt: expectPasswordPrompt(); break;
+                case Success: expectSuccess(); break;
+                case Failure: expectFailure(); break;
+                case Done: expectNothing();
+            }
+        } else if (o instanceof Question) {
+            expectQuestionPrompt((Question) o);
+        }
+    }
+
+    void expect(Object ... os) {
+        for (Object o : os) expect(o);
+    }
+
+    /**
+     * Demonstrates how a setup without any questions behaves just like a normal password
+     * system with no hardening.
+     */
     @Test
     public void test_with_no_questions() throws Exception {
 
@@ -92,15 +119,18 @@ public class SecLoginIntegrationTest {
         passwordIs("password");
         userIs("steve");
 
+        // We add one user, and the system prompts for a password.
         secLogin.addUser("steve");
-        expectPasswordPrompt();
-        expectNothing();
+        expect(PasswordPrompt, Done);
 
+        // Log in with that password successfully.
         secLogin.prompt();
-        expectUserPrompt();
-        expectPasswordPrompt();
-        expectSuccess();
-        expectNothing();
+        expect(UserPrompt, PasswordPrompt, Success, Done);
+
+        // Try to log in with a different password, and fail.
+        passwordIs("psosarwd");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, Failure, Done);
 
     }
 
@@ -116,15 +146,10 @@ public class SecLoginIntegrationTest {
         answerIs(question, "20");
 
         secLogin.addUser("steve");
-        expectPasswordPrompt();
-        expectNothing();
+        expect(PasswordPrompt, Done);
 
         secLogin.prompt();
-        expectUserPrompt();
-        expectPasswordPrompt();
-        expectQuestionPrompt(question);
-        expectSuccess();
-        expectNothing();
+        expect(UserPrompt, PasswordPrompt, question, Success, Done);
 
     }
 
