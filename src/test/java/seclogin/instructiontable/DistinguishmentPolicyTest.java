@@ -33,9 +33,4 @@ public class DistinguishmentPolicyTest {
 
         Assert.assertArrayEquals(expected, policy.measurmentDistinguishment(measurements));
     }
-
-    @Test
-    public void testUserDistinguishment() throws Exception {
-        // TODO
-    }
 }
