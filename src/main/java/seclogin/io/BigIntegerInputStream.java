@@ -12,6 +12,7 @@ public class BigIntegerInputStream extends DataInputStream {
         super(in);
     }
 
+    /** Read a {@link BigInteger}. */
     public BigInteger readBigInteger() throws IOException {
         int len = readInt();
         byte[] bytes = new byte[len];
