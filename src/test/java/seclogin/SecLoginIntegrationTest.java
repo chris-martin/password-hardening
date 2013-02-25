@@ -4,6 +4,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,6 +29,13 @@ public class SecLoginIntegrationTest {
     public void setUp() throws Exception {
 
         userInterface = Mockito.mock(UserInterface.class);
+
+        Mockito.doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                System.out.println(invocation.getArguments()[0].toString().trim());
+                return null;
+            }
+        }).when(userInterface).tell(Mockito.<String>any());
 
         userStatePersistence = new UserStatePersistence() {
 
