@@ -125,6 +125,8 @@ public class SecLoginIntegrationTest {
     @Test
     public void test_password_correctness() throws Exception {
 
+        System.out.println("test_password_correctness");
+
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
         SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, .99);
@@ -153,6 +155,8 @@ public class SecLoginIntegrationTest {
      */
     @Test
     public void test_feature_correctness() throws Exception {
+
+        System.out.println("test_feature_correctness");
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
@@ -190,6 +194,8 @@ public class SecLoginIntegrationTest {
     @Test
     public void test_feature_undistinguishment() throws Exception {
 
+        System.out.println("test_feature_undistinguishment");
+
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
         SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .99);
@@ -219,6 +225,46 @@ public class SecLoginIntegrationTest {
         answerIs(question, "99");
         secLogin.prompt();
         expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+
+    }
+
+    @Test
+    public void test_multiple_questions() throws Exception {
+
+        System.out.println("test_multiple_questions");
+
+        Question questionA = new Question("Question A", new MeasurementParams(50, 2));
+        Question questionB = new Question("Question B", new MeasurementParams(500, 2));
+        Question questionC = new Question("Question C", new MeasurementParams(5000, 2));
+        QuestionBank questions = new QuestionBank(Arrays.<Question>asList(questionA, questionB, questionC));
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, .49);
+
+        passwordIs("password");
+        userIs("steve");
+        answerIs(questionA, "20"); // below mean
+        answerIs(questionB, "800"); // above mean
+        answerIs(questionC, "2000"); // below mean
+
+        // Add one user, and the system prompts for a password.
+        secLogin.addUser("steve");
+        expect(PasswordPrompt, Done);
+
+        // Log in with correct password thrice. The first two fill the history table,
+        // and the third checks against the previous results.
+        for (int i = 0; i < 3; i++) {
+            secLogin.prompt();
+            expect(UserPrompt, PasswordPrompt, questions, Success, Done);
+        }
+
+        // Screw up question C
+        answerIs(questionC, "7000");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Failure, Done);
+
+        // Don't answer question C
+        answerIs(questionC, "");
+        secLogin.prompt();
+        expect(UserPrompt, PasswordPrompt, questions, Failure, Done);
 
     }
 
