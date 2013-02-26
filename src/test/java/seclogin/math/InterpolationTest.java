@@ -7,7 +7,8 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.List;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
+
 
 public class InterpolationTest {
 
