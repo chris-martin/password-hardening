@@ -47,7 +47,7 @@ Add the `-v` flag to run in verbose mode, which will output a large amount of de
 Do not worry about compiling; the first time you run `seclogin.sh`, it will automatically
 build SecLogin (target/seclogin.jar).
 
-SecLogin will create a `.seclogin` directory in the directory where you run the it, so your
+SecLogin will create a `.seclogin` directory in the directory where you run it, so your
 user will need permission to do so.
 
 Demo Setup
