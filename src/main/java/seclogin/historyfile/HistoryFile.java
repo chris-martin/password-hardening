@@ -4,6 +4,8 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import seclogin.MeasurementStats;
 import seclogin.User;
 
@@ -18,6 +20,8 @@ import static com.google.common.base.Preconditions.checkState;
  * from a fixed number of previously successful login attempts.
  */
 public class HistoryFile {
+
+    private static final Logger log = LoggerFactory.getLogger(HistoryFile.class);
 
     static final HashFunction USER_HASH_FN = Hashing.sha256();
 
@@ -81,9 +85,12 @@ public class HistoryFile {
         int nrOfFeatures = measurements[0].length;
         MeasurementStats[] stats = new MeasurementStats[nrOfFeatures];
 
+        log.debug("Calculating historical measurement stats");
         for (int i = 0; i < stats.length; i++) {
+            log.debug("Feature i = {}", i);
             SummaryStatistics stat = new SummaryStatistics();
             for (double[] measurement : measurements) {
+                log.debug("Historical measurements = {}", Arrays.toString(measurement));
                 checkState(measurement.length == nrOfFeatures);
                 double featureMeasurement = measurement[i];
                 if (Double.isNaN(featureMeasurement)) {
@@ -95,6 +102,7 @@ public class HistoryFile {
             if (stat.getN() == measurements.length) {
                 stats[i] = new MeasurementStats(stat.getMean(), stat.getStandardDeviation());
             }
+            log.debug("Calculated stats = {}", stats[i]);
         }
         return stats;
     }

@@ -2,6 +2,8 @@ package seclogin.math;
 
 import java.math.BigInteger;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Represents ''ℤ,,q,,'', the field of integers ''[0, q)''.
  */
@@ -13,7 +15,15 @@ public class Mod {
      * @param q the size of the field
      */
     public Mod(BigInteger q) {
+        checkNotNull(q);
         this.q = q;
+    }
+
+    /**
+     * @return true iff `a` is an element of ''ℤ,,q,,''
+     */
+    public boolean contains(BigInteger a) {
+        return a.compareTo(BigInteger.ZERO) >= 0 && a.compareTo(q) < 0;
     }
 
     /**

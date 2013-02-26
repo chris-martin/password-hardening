@@ -8,11 +8,14 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.tools.jline.console.ConsoleReader;
+import seclogin.math.Mod;
+import seclogin.math.RandomQ;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Properties;
 import java.util.Random;
@@ -71,17 +74,21 @@ public class Console {
             LogConfiguration.disableLogging();
         }
 
-        Config config = loadAndUpdateConfig(args);
+        Random random = new SecureRandom();
+
+        Config config = loadAndUpdateConfig(args, random);
+        Mod q = config.getQ();
+        log.debug("Using q = {}", q.q.toString(16));
         int historyFileSize = config.getHistoryFileSize();
         log.debug("Using history file size = {}", historyFileSize);
 
-        Random random = new SecureRandom();
         SecLogin secLogin = new SecLogin(
             new ConsoleUI(),
             new UserStateFilesystemPersistence(persistentStateDir()),
             random,
             QuestionBank.createDefault(),
-            historyFileSize
+            historyFileSize,
+            q
         );
 
         String usernameToAdd = args.getString("add");
@@ -94,11 +101,11 @@ public class Console {
         secLogin.prompt();
     }
 
-    private static Config loadAndUpdateConfig(Namespace args) {
+    private static Config loadAndUpdateConfig(Namespace args, Random random) {
         File configFile = new File(persistentStateDir(), "seclogin.properties");
         Config config;
         try {
-            config = new Config(configFile);
+            config = new Config(configFile, random);
 
             Integer historyFileSize = args.getInt("historyfilesize");
             if (historyFileSize != null) {
@@ -204,7 +211,7 @@ public class Console {
         final File file;
         final Properties props = new Properties();
 
-        Config(File file) throws IOException {
+        Config(File file, Random random) throws IOException {
             this.file = file;
             if (!file.exists()) {
                 save();
@@ -216,16 +223,38 @@ public class Console {
             } finally {
                 reader.close();
             }
+
+            // ensure q
+            if (props.getProperty(qKey) == null) {
+                Mod q = new RandomQ(random).nextQ();
+                log.debug("No q configured. Generated q = {}", q.q.toString(16));
+                props.setProperty(qKey, q.q.toString(16));
+                save();
+            }
         }
 
         void save() throws IOException {
             FileWriter writer = new FileWriter(file);
             try {
-                log.debug("Saving configuration to %s", file);
+                log.debug("Saving configuration to {}", file);
                 props.store(writer, null);
             } finally {
                 writer.close();
             }
+        }
+
+        String qKey = "q";
+        Mod getQ() {
+            BigInteger q;
+            try {
+                q = new BigInteger(props.getProperty(qKey), 16);
+            } catch (NumberFormatException e) {
+                throw new RuntimeException(qKey + " must be an base-16 integer");
+            }
+            if (!q.isProbablePrime(100)) {
+                throw new RuntimeException("Configured q (" + q.toString(16) + ") is not prime!");
+            }
+            return new Mod(q);
         }
 
         String historyFileSizeKey = "historyFileSize";

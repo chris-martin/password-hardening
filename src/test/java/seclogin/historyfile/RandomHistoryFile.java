@@ -9,7 +9,7 @@ class RandomHistoryFile {
     private final HistoryFileParams params;
     private final Random random;
 
-    RandomHistoryFile(HistoryFileParams params, Random random) {
+    private RandomHistoryFile(HistoryFileParams params, Random random) {
         this.params = params;
         this.random = random;
     }

@@ -3,7 +3,6 @@ package seclogin.instructiontable;
 import seclogin.instructiontable.InstructionTable.Entry;
 import seclogin.io.BigIntegerInputStream;
 import seclogin.io.BigIntegerOutputStream;
-import seclogin.math.Mod;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -20,8 +19,6 @@ public class InstructionTableIo {
     public void write(InstructionTable table, OutputStream outputStream) throws IOException {
         BigIntegerOutputStream out = new BigIntegerOutputStream(new BufferedOutputStream(outputStream));
         try {
-            out.writeBigInteger(table.q.q);
-
             out.writeInt(table.r.length);
             out.write(table.r);
 
@@ -40,8 +37,6 @@ public class InstructionTableIo {
     public InstructionTable read(InputStream inputStream) throws IOException {
         BigIntegerInputStream in = new BigIntegerInputStream(new BufferedInputStream(inputStream));
         try {
-            Mod q = new Mod(in.readBigInteger());
-
             byte[] r = new byte[in.readInt()];
             in.readFully(r);
 
@@ -49,7 +44,7 @@ public class InstructionTableIo {
             for (int i = 0; i < entries.length; i++) {
                 entries[i] = new Entry(in.readBigInteger(), in.readBigInteger());
             }
-            return new InstructionTable(q, r, entries);
+            return new InstructionTable(r, entries);
         } finally {
             in.close();
         }

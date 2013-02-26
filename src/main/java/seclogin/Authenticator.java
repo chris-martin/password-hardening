@@ -9,30 +9,27 @@ import seclogin.historyfile.IndecipherableHistoryFileException;
 import seclogin.instructiontable.Distinguishment;
 import seclogin.instructiontable.DistinguishmentPolicy;
 import seclogin.instructiontable.InstructionTable;
+import seclogin.instructiontable.InstructionTableModQ;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
-import java.util.Random;
 
 /** Authenticates users against their hardened passwords. */
 public class Authenticator {
 
     private static final Logger log = LoggerFactory.getLogger(Authenticator.class);
-    
-    private final Random random;
+
+    private final InstructionTableModQ instructionTableModQ;
     private final HistoryFileCipher historyFileCipher;
     private final DistinguishmentPolicy distinguishmentPolicy;
 
 
-    public Authenticator(
-            Random random,
-            MeasurementParams[] measurementParams,
-            HistoryFileCipher historyFileCipher) {
-
-        this.random = random;
+    public Authenticator(InstructionTableModQ instructionTableModQ,
+                         MeasurementParams[] measurementParams,
+                         HistoryFileCipher historyFileCipher) {
+        this.instructionTableModQ = instructionTableModQ;
         this.historyFileCipher = historyFileCipher;
-        distinguishmentPolicy =
-                new DistinguishmentPolicy(measurementParams);
+        distinguishmentPolicy = new DistinguishmentPolicy(measurementParams);
     }
 
     /**
@@ -40,7 +37,7 @@ public class Authenticator {
      * and history file using the given regular password and measurements (responses to questions).
       */
     @Nullable
-    public UserState authenticate(UserState userState, Password password, double[] measurements) {
+    public UserState authenticate(UserState userState, Password pwd, double[] measurements) {
         log.debug("Authenticating user `{}' with measurements = {}", userState.user, Arrays.toString(measurements));
 
         // determine feature distinguishment from measurements
@@ -49,7 +46,7 @@ public class Authenticator {
         log.debug("Determined (from measurements) feature distinguishments = {}", Arrays.toString(distinguishments));
 
         // interpolate hardened password from regular password and distinguishments
-        HardenedPassword hpwd = userState.instructionTable.interpolateHpwd(password, distinguishments);
+        HardenedPassword hpwd = instructionTableModQ.interpolateHpwd(userState.instructionTable, pwd, distinguishments);
         log.debug("Interpolated hpwd = {}", hpwd);
 
         // try to decrypt the history file with the recovered hardened password
@@ -75,13 +72,12 @@ public class Authenticator {
         log.debug("Determined (from measurement statistics) feature distinguishments = {}",
                 Arrays.toString(distinguishments));
 
-        log.debug("Generating from distinguishments new instruction table and hardened password");
-        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-            InstructionTable.generate(password, distinguishments, random);
+        log.debug("Generating new instruction table (with user's new distinguishments)");
+        InstructionTable table = instructionTableModQ.generate(hpwd, pwd, distinguishments);
 
-        log.debug("Encrypting history file");
-        EncryptedHistoryFile encryptedHistoryFile = historyFileCipher.encrypt(historyFile, tableAndHpwd.hpwd);
+        log.debug("Encrypting history file with hpwd");
+        EncryptedHistoryFile encryptedHistoryFile = historyFileCipher.encrypt(historyFile, hpwd);
 
-        return new UserState(userState.user, tableAndHpwd.table, encryptedHistoryFile);
+        return new UserState(userState.user, table, encryptedHistoryFile);
     }
 }

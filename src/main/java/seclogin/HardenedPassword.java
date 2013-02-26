@@ -7,7 +7,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /** A hardened password. */
 public class HardenedPassword {
 
-    private final BigInteger hpwd;
+    public final BigInteger hpwd;
 
     public HardenedPassword(BigInteger hpwd) {
         this.hpwd = checkNotNull(hpwd);

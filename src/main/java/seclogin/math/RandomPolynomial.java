@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /** Adapts a `Random` for use with `Polynomial`s.
   */
 public class RandomPolynomial {
@@ -25,8 +27,18 @@ public class RandomPolynomial {
      * @param n the number of coefficients in the polynomial
      */
     public Polynomial nextPolynomial(int n) {
-        List<BigInteger> coefficients = new ArrayList<BigInteger>();
-        for (int i = 0; i < n; i++) {
+        return nextPolynomial(r.nextBigIntModQ(), n);
+    }
+
+    /**
+     * @return a random polynomial with `n` coefficients, the first of which (i.e., the y-intercept) is given
+     * @param n the number of coefficients in the polynomial
+     */
+    public Polynomial nextPolynomial(BigInteger yIntercept, int n) {
+        checkArgument(n >= 1);
+        List<BigInteger> coefficients = new ArrayList<BigInteger>(n);
+        coefficients.add(yIntercept);
+        for (int i = 1; i < n; i++) {
             coefficients.add(r.nextBigIntModQ());
         }
         return new Polynomial(coefficients, r.q);

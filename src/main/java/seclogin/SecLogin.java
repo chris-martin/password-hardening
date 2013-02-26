@@ -11,6 +11,8 @@ import seclogin.historyfile.HistoryFileCipher;
 import seclogin.historyfile.HistoryFileParams;
 import seclogin.instructiontable.Distinguishment;
 import seclogin.instructiontable.InstructionTable;
+import seclogin.instructiontable.InstructionTableModQ;
+import seclogin.math.Mod;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -25,19 +27,18 @@ public class SecLogin {
 
     private final UserInterface userInterface;
     private final UserStatePersistence userStatePersistence;
-    private final Random random;
     private final QuestionBank questionBank;
-    private final Authenticator authenticator;
     private final HistoryFileCipher historyFileCipher;
     private final MeasurementParams[] measurementParams;
     private final HistoryFileParams historyFileParams;
+    private final InstructionTableModQ instructionTableModQ;
+    private final Authenticator authenticator;
 
 
     public SecLogin(UserInterface userInterface, UserStatePersistence userStatePersistence,
-                    Random random, QuestionBank questionBank, int historyFileSize) {
+                    Random random, QuestionBank questionBank, int historyFileSize, Mod q) {
         this.userInterface = userInterface;
         this.userStatePersistence = userStatePersistence;
-        this.random = random;
 
         this.questionBank = questionBank;
         checkArgument(questionBank.nrOfQuestions() > 0);
@@ -49,7 +50,9 @@ public class SecLogin {
 
         BlockCipher cipher = new Aes128Cbc();
         historyFileCipher = new HistoryFileCipher(cipher);
-        authenticator = new Authenticator(random, measurementParams, historyFileCipher);
+
+        instructionTableModQ = new InstructionTableModQ(q, random);
+        authenticator = new Authenticator(instructionTableModQ, measurementParams, historyFileCipher);
     }
 
     public void prompt() {
@@ -121,18 +124,21 @@ public class SecLogin {
         userStatePersistence.write(userState);
     }
 
-    private UserState generateNewUserState(User user, Password password) {
+    private UserState generateNewUserState(User user, Password pwd) {
+        HardenedPassword hpwd = instructionTableModQ.generateHardenedPassword();
+        log.debug("Generated hardened password hpwd = {}", hpwd);
+
         log.debug("Generating instruction table with no distinguishing features");
-        InstructionTable.InstructionTableAndHardenedPassword tableAndHpwd =
-                InstructionTable.generate(password, new Distinguishment[measurementParams.length], random);
+        InstructionTable table = instructionTableModQ.generate(
+                hpwd, pwd, new Distinguishment[measurementParams.length]);
 
         log.debug("Creating empty history file of size = {}", historyFileParams.maxNrOfMeasurements);
         HistoryFile emptyHistoryFile = HistoryFile.emptyHistoryFile(user, historyFileParams);
 
-        log.debug("Encrypting history file");
-        EncryptedHistoryFile encryptedHistoryFile = historyFileCipher.encrypt(emptyHistoryFile, tableAndHpwd.hpwd);
+        log.debug("Encrypting history file with hpwd");
+        EncryptedHistoryFile encryptedHistoryFile = historyFileCipher.encrypt(emptyHistoryFile, hpwd);
 
-        return new UserState(user, tableAndHpwd.table, encryptedHistoryFile);
+        return new UserState(user, table, encryptedHistoryFile);
     }
 
 }

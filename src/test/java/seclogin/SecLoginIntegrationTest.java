@@ -6,6 +6,8 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import seclogin.math.Mod;
+import seclogin.math.RandomQ;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,6 +31,8 @@ public class SecLoginIntegrationTest {
     UserStatePersistence userStatePersistence;
 
     Random random;
+
+    Mod q;
 
     @Before
     public void setUp() throws Exception {
@@ -57,6 +61,8 @@ public class SecLoginIntegrationTest {
         };
 
         random = TestRandom.random();
+
+        q = new RandomQ(random).nextQ();
 
         inOrder = inOrder(userInterface);
 
@@ -134,7 +140,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, q);
 
         passwordIs("password");
         userIs("steve");
@@ -165,7 +171,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 1, q);
 
         passwordIs("password");
         userIs("steve");
@@ -203,7 +209,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, q);
 
         passwordIs("password");
         userIs("steve");
@@ -242,7 +248,7 @@ public class SecLoginIntegrationTest {
         Question questionB = new Question("Question B", new MeasurementParams(500, 2));
         Question questionC = new Question("Question C", new MeasurementParams(5000, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(questionA, questionB, questionC));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, q);
 
         passwordIs("password");
         userIs("steve");
@@ -282,7 +288,7 @@ public class SecLoginIntegrationTest {
         Question questionA = new Question("Question A", new MeasurementParams(50, 2));
         Question questionB = new Question("Question B", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(questionA, questionB));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, q);
 
         passwordIs("password");
         userIs("steve");
@@ -325,7 +331,7 @@ public class SecLoginIntegrationTest {
 
         Question question = new Question("Question A", new MeasurementParams(50, 2));
         QuestionBank questions = new QuestionBank(Arrays.<Question>asList(question));
-        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2);
+        SecLogin secLogin = new SecLogin(userInterface, userStatePersistence, random, questions, 2, q);
 
         passwordIs("password");
         userIs("steve");
