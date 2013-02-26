@@ -207,6 +207,7 @@ public class Console {
 
     }
 
+    /** Config for the console app. */
     static class Config {
 
         final File file;
@@ -215,6 +216,7 @@ public class Console {
         Config(File file, Random random) throws IOException {
             this.file = file;
             if (!file.exists()) {
+                log.debug("Creating missing configuration file {}", file);
                 save();
             }
             FileReader reader = new FileReader(file);
@@ -253,7 +255,7 @@ public class Console {
                 throw new RuntimeException(qKey + " must be an base-16 integer");
             }
             if (!q.isProbablePrime(100)) {
-                throw new RuntimeException("Configured q (" + q.toString(16) + ") is not prime!");
+                throw new RuntimeException("Configured q = " + q.toString(16) + " is not prime!");
             }
             return new Mod(q);
         }

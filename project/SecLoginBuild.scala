@@ -1,5 +1,6 @@
 import sbt._
 import sbt.Keys._
+import sbt.Tests.Setup
 import sbtassembly.Plugin._
 import AssemblyKeys._
 
@@ -9,7 +10,12 @@ object SecLoginBuild extends Build {
     val framework = new TestFramework("com.dadrox.sbt.junit.JunitFramework")
     Seq(
       testFrameworks += framework,
-      testOptions in Test += Tests.Argument(framework, "-vo", "-tv")
+      testOptions in Test ++= Seq(
+        Tests.Argument(framework, "-vo", "-tv"),
+        Setup( cl =>
+          cl.loadClass("seclogin.TestLogConfiguration").getMethod("configureLogging").invoke(null)
+        )
+      )
     )
   }
 
