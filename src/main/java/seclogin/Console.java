@@ -46,17 +46,18 @@ public class Console {
         ArgumentParser parser = ArgumentParsers
                 .newArgumentParser(SecLogin.class.getSimpleName())
                 .defaultHelp(true)
-                .description("Password hardening proof-of-concept");
+                .description("SecLogin: Stronger authentication using behavior based questions");
 
         parser.addArgument("-a", "--add")
-                .help("Add specified user");
+                .help("Add specified user.");
 
         parser.addArgument("-v", "--verbose")
+                .help("Turn on debug output.")
                 .action(Arguments.storeTrue());
 
         parser.addArgument("--historyfilesize")
                 .help("Change the history file size. Warning: Altering the history file size" +
-                        "with existing user state will likely result in unexpected behavior.")
+                        " with existing user state will likely result in unexpected behavior.")
                 .type(Integer.class);
 
         Namespace ns;
