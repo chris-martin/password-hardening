@@ -42,7 +42,7 @@ To log in:
 
     $ ./seclogin.sh
 
-Add the `-v' to run in verbose mode, which will output a large amount of debug information.
+Add the `-v` to run in verbose mode, which will output a large amount of debug information.
 
 Do not worry about compiling; the first time you run `seclogin.sh`, it will automatically
 build SecLogin (target/seclogin.jar).
