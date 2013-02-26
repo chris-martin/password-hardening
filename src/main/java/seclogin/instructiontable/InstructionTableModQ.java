@@ -82,7 +82,6 @@ public class InstructionTableModQ {
         random.nextBytes(r);
 
         log.debug("Generating instruction table");
-        log.debug("q = {}", q.q.toString(16));
         log.debug("r = {}", BaseEncoding.base16().lowerCase().encode(r));
         log.debug("hpwd = {}", hpwd);
 
